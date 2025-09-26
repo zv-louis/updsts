@@ -1,0 +1,56 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        // プラグインデバッグ用
+        {
+            "name": "Python Plugin Debug (Attach)",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost", // replace this with remote machine name
+                "port": 5678
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "Python debug current file",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console" : "integratedTerminal",
+            // "stopOnEntry": true,
+            "env": {
+
+            }
+        },
+        {
+            "name": "Python: 'updsts'",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "updsts",
+            "args": [
+
+            ],
+            "console": "integratedTerminal",
+            // "stopOnEntry": true,
+            "env": {
+
+            }
+        },
+        {
+            "name": "Python: 'updsts help'",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "updsts",
+            "args": [
+                "-h",
+            ],
+            "console": "integratedTerminal",
+            // "stopOnEntry": true,
+            "env": {
+
+            }
+        }
+    ],
+    "compounds": []
+}

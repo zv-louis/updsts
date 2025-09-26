@@ -1,0 +1,19 @@
+{
+    "servers": {
+        "updsts": {
+            "type": "stdio",
+            "command": "uv",
+            "args": [
+                "run",
+                "--directory",
+                "${workspaceFolder}",
+                "-m",
+                "updsts",
+                "mcp",
+                "--mcp-server"
+            ],
+            "env": {}
+        }
+    },
+    "inputs": []
+}

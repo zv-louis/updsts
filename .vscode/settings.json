@@ -1,0 +1,17 @@
+{
+    // 単体テストツールとしてpytestを有効化
+    "python.testing.pytestEnabled": true,
+    // ファイル保存時にテスト対象コードを自動的に探索
+    "python.testing.autoTestDiscoverOnSaveEnabled": true,
+    "python.testing.pytestArgs": [
+        "test"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python-envs.pythonProjects": [
+        {
+            "path": "",
+            "envManager": "ms-python.python:venv",
+            "packageManager": "ms-python.python:pip"
+        }
+    ],
+}
