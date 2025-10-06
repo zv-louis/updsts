@@ -19,12 +19,13 @@ AWSのSTS認証情報をcredentalファイルへ反映させるシンプルなCU
   - [get コマンド](#get-コマンド)
   - [list コマンド](#list-コマンド)
   - [mcp コマンド](#mcp-コマンド)
-- [AWS認証情報ファイル形式](#aws認証情報ファイル形式)
-- [mcp tool 一覧](#mcp-tool-一覧)
+- [AWS認証情報ファイル](#aws認証情報ファイル)
+  - [AWS認証情報ファイル形式](#aws認証情報ファイル形式)
+  - [AWS認証情報ファイルの場所](#aws認証情報ファイルの場所)
+- [提供される MCP tool 一覧](#提供される-mcp-tool-一覧)
   - [`updsts_update_sts_credential`](#updsts_update_sts_credential)
   - [`updsts_get_credential_info`](#updsts_get_credential_info)
   - [`updsts_get_credential_info_list`](#updsts_get_credential_info_list)
-- [ファイル保存場所](#ファイル保存場所)
 - [セキュリティに関する注意事項](#セキュリティに関する注意事項)
 - [ライセンス](#ライセンス)
 
@@ -102,9 +103,9 @@ uv run [--directory {project_dir}] -m updsts mcp --mcp-server
 ```bash
 # pipでインストールする場合は以下のコマンドを実行
 # モジュールパッケージをインストール
-pip install updsts-<version>.tar.gz
+python -m pip install updsts-<version>.tar.gz
 # またはwheelファイルをインストール
-pip install updsts-<version>-py3-none-any.whl
+python -m pip pip install updsts-<version>-py3-none-any.whl
 
 # uvでインストールする場合は以下のコマンドを実行
 uv pip install updsts-<version>.tar.gz
@@ -181,9 +182,11 @@ MCPサーバーとして登録することで、一般的なエージェント�
 uv run [--directory {project_dir}] -m updsts get -n <profile_name> -t <totp_token>
 ```
 
-- `-n, --profile`: 更新するAWSプロファイル名 (必須)
+- `-n, --profile`: STSトークンを取得するAWSプロファイル名 (必須)
 - `-t, --totp-token`: MFAデバイスで生成されたTOTPトークン (必須)
+- `-sn, --sts-profile-name`: AWS認証情報ファイル内に生成するSTSプロファイル名 (オプション、デフォルト: AWSプロファイル名 + "_sts")
 - `-d, --duration`: トークン持続時間（秒）(オプション、デフォルト: 3600)
+- `-c, --credential-file`: 認証情報ファイルのパス. (オプション、デフォルト: ~/.aws/credentials)
 
 ### list コマンド
 
@@ -208,27 +211,29 @@ uv run [--directory {project_dir}] -m updsts mcp --mcp-server
 uv run [--directory {project_dir}] -m updsts mcp
 ```
 
-## AWS認証情報ファイル形式
+## AWS認証情報ファイル
 
-updsts は標準的なAWS認証情報ファイル形式で動作します。  
+### AWS認証情報ファイル形式
+
+updsts は AWS CLI の標準的なAWS認証情報ファイル形式を操作します。  
 既存のプロファイルを保持しながら、指定されたセクションのみを更新します。  
 
 認証情報ファイルの例:  
-updsts を動作させるには、 mfa_device_arn の設定が必要です
 
 ```ini
 [default]
-# アクセスキーID (required)
+# アクセスキーID (必須)
 aws_access_key_id = AKIAIOSFODNN7EXAMPLE
-# シークレットアクセスキー (required)
+# シークレットアクセスキー (必須)
 aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLE
-# IAMユーザーのMFAデバイスARN (required)
+# IAMユーザーのMFAデバイスARN (必須. ユーザが追加してください)
 mfa_device_arn = arn:aws:iam::123456789012:mfa/user 
-# mktotp mcpサーバで管理されているTOTPシークレット名 (optional)
-# 設定してあればAgentはTOTPトークンを自動生成して使用します.
+# mktotp mcpサーバで管理されているTOTPシークレット名 (任意. ユーザが追加してください)
+# この項目が設定してあれば、Agentは `mktotp` mcpサーバー が利用可能であれば、TOTPトークンを自動生成して使用します.
 totp_secret_name = my_totp_secret 
 
-# ${{{ key=default [auto update by updsts]
+# 以下のタグに囲まれた部分が updsts によって自動的に作成/更新されます.
+# ${{{ key=<STSをリクエストしたプロファイル名> [auto update by updsts]
 [default_sts]
 aws_access_key_id = ASIAIOSFODNN7EXAMPLE
 aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYtempKEY
@@ -240,57 +245,59 @@ expiration_datetime = 2025-10-05T15:30:00+09:00
 updstsは特別なタグ間のセクションを自動的に管理し、他のプロファイルはそのまま保持します.  
 タグは初回の実行時に自動的に追加されるため、手動で追加する必要はありません。
 
-## MCP tool 一覧
-
-MCPサーバーとして起動した場合、以下のtoolがAgentから利用可能です.
-
-### `updsts_update_sts_credential`
-
-指定されたAWSプロファイルのSTS認証情報を取得・更新します。
-
-- パラメータ:
-  - `profile_name` (str): 更新するAWSプロファイル名 (必須)
-  - `totp_token` (str): MFAデバイスからのTOTPトークン (必須)
-  - `cred_file` (str | None): 認証情報ファイルのパス (オプション、デフォルト: None)
-  - `duration` (int): トークン持続時間（秒）(オプション、デフォルト: 3600)
-- 戻り値: 更新された認証情報、またはNone
-
-### `updsts_get_credential_info`
-
-指定されたAWSプロファイルの認証情報を取得します.  
-ただし、secret_access_key, session_token はマスクして表示されます.  
-(LLMにsecret情報を渡さないようになっています)
-
-- パラメータ:
-  - `profile_name` (str): 取得するAWSプロファイル名 (必須)
-  - `cred_file` (str | None): 認証情報ファイルのパス (オプション、デフォルト: None)
-- 戻り値: 認証情報の辞書、またはNone
-
-### `updsts_get_credential_info_list`
-
-認証情報ファイル内のすべてのAWSプロファイルの認証情報を取得します.  
-ただし、secret_access_key, session_token はマスクして表示されます.  
-(LLMにsecret情報を渡さないようになっています)
-
-- パラメータ:
-  - `cred_file` (str | None): 認証情報ファイルのパス (オプション、デフォルト: None)
-- 戻り値: 認証情報の辞書のリスト、または空リスト
-
-## ファイル保存場所
+### AWS認証情報ファイルの場所
 
 デフォルトでは、AWS認証情報は以下の場所に保存されます.  
+※ aws cli が使用するファイルと同じです.  
 
 ```text
 ~/.aws/credentials
 ```
 
-`-c` オプションで別の場所を指定できます.  
+`-c` オプションで別の場所のファイルを指定できます.  
+
+## 提供される MCP tool 一覧
+
+MCPサーバーとして起動した場合、以下のtoolがAgentから利用可能です.
+
+### `updsts_update_sts_credential`
+
+指定されたAWSプロファイルのSTS認証情報を取得し、credentialファイル内にstsのプロファイルを作成/更新します。
+
+- パラメータ:
+  - `profile_name` (str): 更新するAWSプロファイル名 (必須)
+  - `totp_token` (str): MFAデバイスからのTOTPトークン (必須)
+  - `sts_profile_name` (str | None): AWS認証情報ファイル内に作成するSTSプロファイル名 (オプション)
+    - Noneまたは空文字列の場合、`<profile_name>_sts`が使用されます (デフォルト: None)
+  - `cred_file` (str | None): 認証情報ファイルのパス (オプション)
+    - Noneまたは空文字列の場合、デフォルトの場所(~/.aws/credentials)が使用されます (デフォルト: None)
+  - `duration` (int): STSトークンの有効期間（秒）(オプション、デフォルト: 3600)
+- 戻り値 (dict[str, str] | None): 更新された認証情報の詳細を含む辞書、または失敗時はNone
+
+### `updsts_get_credential_info`
+
+プロファイル名を指定して、credentialファイル内に存在するAWSプロファイルの情報を取得します.  
+ただし、セキュリティ上の理由から、`aws_secret_access_key` , `aws_session_token` はマスクした情報が返却されます.  
+
+- パラメータ:
+  - `profile_name` (str): 取得するAWSプロファイル名 (必須)
+  - `cred_file` (str | None): 認証情報ファイルのパス (オプション)
+    - Noneまたは空文字列の場合、デフォルトの場所(~/.aws/credentials)が使用されます (デフォルト: None)
+- 戻り値 (dict[str, str] | None): 認証情報の詳細を含む辞書、または見つからない場合はNone
+
+### `updsts_get_credential_info_list`
+
+credentialファイル内のすべてのAWSプロファイルの情報を取得します.  
+ただし、セキュリティ上の理由から、`aws_secret_access_key` , `aws_session_token` はマスクした情報が返却されます.  
+
+- パラメータ:
+  - `cred_file` (str | None): 認証情報ファイルのパス (オプション)
+    - Noneまたは空文字列の場合、デフォルトの場所(~/.aws/credentials)が使用されます (デフォルト: None)
+- 戻り値 (list[dict[str, str]]): 認証情報の詳細を含む辞書のリスト、またはプロファイルが見つからない場合は空リスト
 
 ## セキュリティに関する注意事項
 
 - AWS認証情報ファイルには機密情報が含まれているため、適切な権限設定で保護してください (推奨: 600)
-- 一時的なSTSトークンには制限された有効期限があり、自動的に失効します
-- 強力なMFAデバイスを使用し、TOTPシークレットを安全に保管してください
 
 ## ライセンス
 

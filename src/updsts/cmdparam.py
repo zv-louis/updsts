@@ -24,6 +24,14 @@ def register_sub_get(subparsers,
         help='Profile name to get sts secret key.'
     )
     get_parser.add_argument(
+        '-sn',
+        '--sts_profile_name',
+        type=str,
+        required=False,
+        default=None,
+        help='STS Profile name in the AWS credentials file.'
+    )
+    get_parser.add_argument(
         '-t',
         '--totp_token',
         type=str,

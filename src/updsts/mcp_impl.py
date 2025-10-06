@@ -11,6 +11,7 @@ from .awsutil import *
 #-------------------------------------------------------------------------------------------
 async def updsts_update_sts_credential_impl(profile_name: str,
                                             totp_token: str,
+                                            sts_profile_name: str | None = None,
                                             cred_file: str | None = None,
                                             duration: int = 3600) -> dict[str, str] | None:
     """
@@ -31,6 +32,7 @@ async def updsts_update_sts_credential_impl(profile_name: str,
     try:
         ret = update_credentials(profile_name=profile_name,
                                  totp_token=totp_token,
+                                 sts_profile_name=sts_profile_name,
                                  cred_file=cred_file,
                                  duration=duration)
     except Exception as e:

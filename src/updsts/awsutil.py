@@ -264,7 +264,7 @@ def update_credentials(profile_name: str,
                        duration: int = 3600,
                        sts_profile_name: str | None = None,
                        target_key: str | None = None,
-                       cred_file: str | None = None) -> dict[str, str] | None:
+                       cred_file: str | os.PathLike | None = None) -> dict[str, str] | None:
     """
     Update the AWS credentials file with new STS tokens.
     """
@@ -277,7 +277,8 @@ def update_credentials(profile_name: str,
                                         duration_seconds=duration)
         if sts_credentials:
             target_key = profile_name if target_key is None else target_key
-            updater = CredentialUpdater(credential_path=cred_file if cred_file else get_credential_file_path())
+            credential_file_path = Path(cred_file) if cred_file else get_credential_file_path()
+            updater = CredentialUpdater(credential_path=credential_file_path)
             updater.set_target_tag_name(target_key)
             updater.set_credentials(sts_credentials)
             updater.set_sts_profile_name(sts_profile_name)

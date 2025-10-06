@@ -21,6 +21,7 @@ def handle_get(args):
     profile_name = args.profile_name
     totp_token = args.totp_token
     cred_file = args.credential_file if args.credential_file else None
+    sts_profile_name = args.sts_profile_name if hasattr(args, 'sts_profile_name') and args.sts_profile_name else None
     duration = args.duration if args.duration else 3600
     sts_profile_name = args.sts_profile_name if hasattr(args, 'sts_profile_name') and args.sts_profile_name else None
     target_key = args.target_key if hasattr(args, 'target_key') and args.target_key else None
