@@ -82,7 +82,7 @@ async def updsts_update_sts_credential(
                             so, check it by using 'updsts_get_credential_info' first to get totp secret name.
                             or prompt user to input the correct TOTP token if there is no totp secret registered.
         cred_file: Path to AWS credentials file (optional)
-                   If this is None, the default location (~/.aws/credentials) is used. Defaults is None.
+                   If this is None or a empty string, the default location (~/.aws/credentials) is used. Defaults is None.
         duration: Duration seconds of the sts token (default: 3600)
     Returns:)
 
@@ -112,7 +112,7 @@ async def updsts_get_credential_info(
     Args:
         profile_name: AWS profile name to get credentials for
         cred_file: Path to AWS credentials file (optional)
-                   If this is None, the default location (~/.aws/credentials) is used. Defaults is None.
+                   If this is None or a empty string, the default location (~/.aws/credentials) is used. Defaults is None.
     Returns:
         Dictionary containing the credential details or None if not found
     """
@@ -134,7 +134,7 @@ async def updsts_get_credential_info_list(
 
     Args:
         cred_file: Path to AWS credentials file (optional)
-                   If this is None, the default location (~/.aws/credentials) is used. Defaults is None.
+                   If this is None or a empty string, the default location (~/.aws/credentials) is used. Defaults is None.
     Returns:
         the list of the dictionary containing the credential details or empty list if not found.
     """

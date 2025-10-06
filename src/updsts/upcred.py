@@ -123,20 +123,19 @@ class CredentialUpdater:
                 if not updated_profile_info:
                     logger.warning(f"key='{self.target_tag_name}' not found in the credential file.")
                     # create section
-                    fout.write(f"\n[{self.target_tag_name}_sts]\n")
                     aws_access_key_id     = self.creds.get("AccessKeyId",     "")
                     aws_secret_access_key = self.creds.get("SecretAccessKey", "")
                     aws_session_token     = self.creds.get("SessionToken",    "")
                     aws_token_expiration  = self.creds.get("Expiration",      "")
                     # write with indentation
                     prof_tag = f"[{sts_profile_name}]\n"
-                    fout.write(prof_tag)
                     ak_str    = f"aws_access_key_id={aws_access_key_id}\n"
                     asak_str  = f"aws_secret_access_key={aws_secret_access_key}\n"
                     token_str = f"aws_session_token={aws_session_token}\n"
                     exp_str   = f"expiration_datetime={aws_token_expiration}\n"
                     # write begin tag
                     fout.write(f"# ${{{{{{ key={self.target_tag_name} [auto update by updsts]\n")
+                    fout.write(prof_tag)
                     fout.write(ak_str)
                     fout.write(asak_str)
                     fout.write(token_str)
