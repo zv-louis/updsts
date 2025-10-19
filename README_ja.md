@@ -6,37 +6,34 @@ AWSのSTS認証情報をcredentalファイルへ反映させるシンプルなCU
 
 <!-- TOC tocDepth:2..3 chapterDepth:2..6 -->
 
-- [概要](#概要)
-- [特徴](#特徴)
-- [実行環境](#実行環境)
-- [モジュールパッケージのビルド](#モジュールパッケージのビルド)
-- [使用方法](#使用方法)
-  - [プロジェクトから直接実行](#プロジェクトから直接実行)
-  - [モジュールパッケージをPython環境にインストール](#モジュールパッケージをpython環境にインストール)
-  - [MCPサーバーとして登録](#mcpサーバーとして登録)
-- [CUIツール コマンドオプション](#cuiツール-コマンドオプション)
-  - [共通オプション](#共通オプション)
-  - [get コマンド](#get-コマンド)
-  - [list コマンド](#list-コマンド)
-  - [mcp コマンド](#mcp-コマンド)
-- [AWS認証情報ファイル](#aws認証情報ファイル)
-  - [AWS認証情報ファイル形式](#aws認証情報ファイル形式)
-  - [AWS認証情報ファイルの場所](#aws認証情報ファイルの場所)
-- [提供される MCP tool 一覧](#提供される-mcp-tool-一覧)
+- [1. 概要](#1-概要)
+- [2. 特徴](#2-特徴)
+- [3. 実行環境](#3-実行環境)
+- [4. インストール/使用方法](#4-インストール使用方法)
+- [5. MCPサーバーとして登録する](#5-mcpサーバーとして登録する)
+- [6. CUIツール コマンドオプション](#6-cuiツール-コマンドオプション)
+  - [6-1. 共通オプション](#6-1-共通オプション)
+  - [6-2. `get` コマンド](#6-2-get-コマンド)
+  - [6-3. `list` コマンド](#6-3-list-コマンド)
+  - [6-4. `mcp` コマンド](#6-4-mcp-コマンド)
+- [7. AWS認証情報ファイル](#7-aws認証情報ファイル)
+  - [7-1. AWS認証情報ファイル形式](#7-1-aws認証情報ファイル形式)
+  - [7-2. AWS認証情報ファイルの場所](#7-2-aws認証情報ファイルの場所)
+- [8. 提供される MCP tool 一覧](#8-提供される-mcp-tool-一覧)
   - [`updsts_update_sts_credential`](#updsts_update_sts_credential)
   - [`updsts_get_credential_info`](#updsts_get_credential_info)
   - [`updsts_get_credential_info_list`](#updsts_get_credential_info_list)
-- [セキュリティに関する注意事項](#セキュリティに関する注意事項)
-- [ライセンス](#ライセンス)
+- [9. セキュリティに関する注意事項](#9-セキュリティに関する注意事項)
+- [10. ライセンス](#10-ライセンス)
 
 <!-- /TOC -->
 
-## 概要
+## 1. 概要
 
 updsts は 既存のAWS credential(.aws/credentails)ファイルに登録されている認証情報から AWS STS（Security Token Service）認証情報を取得し,credentialファイルへ自動で反映するコマンドラインツールです。  
 AWS認証情報ファイル内の一時的な認証情報を自動的に更新するローカルMCPサーバーの機能も持っていて、一般的なエージェントツールからの操作も可能です。
 
-## 特徴
+## 2. 特徴
 
 - MFA認証を使用したAWS STS一時認証情報の取得
 - AWS認証情報ファイルの新しいセッショントークンによる自動更新
@@ -44,9 +41,10 @@ AWS認証情報ファイル内の一時的な認証情報を自動的に更新�
 - 認証情報ファイル内のすべてのAWSプロファイルの一覧表示
 - 既存の認証情報プロファイルの安全な保護
 - ローカルMCPサーバーとして機能し、一般的なエージェントツールからの操作が可能
+　(もちろん、secret key, session token等の機密情報はLLMに送信されないように考慮されています)
 - プロキシ環境のサポート
 
-## 実行環境
+## 3. 実行環境
 
 このプロジェクトではパッケージマネージャーとしてuvを使用しています。  
 uvを使用することで実行環境を自動的に再現できます。  
@@ -55,78 +53,24 @@ uvのインストールについてはこちらを参照してください:
 
 - [Installing uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-```bash
-# updsts ディレクトリにプロジェクトがクローンされていることを前提
-cd updsts
-# 依存関係をインストールして実行。ヘルプを表示
-uv run -m updsts --help
-```
+## 4. インストール/使用方法
 
-## モジュールパッケージのビルド
-
-モジュールパッケージを作成するには、以下のuvコマンドを実行します。  
-生成されたパッケージはdistディレクトリに保存されます。  
-生成されたパッケージはpip等でインストールできます。
+uv環境にインストールして使用します.  
 
 ```bash
-# updsts ディレクトリにプロジェクトがクローンされていることを前提
-cd updsts
-# パッケージ作成
-uv build
+# gitリポジトリから直接インストール
+uv tool install git+{リポジトリのURL}
 ```
 
-## 使用方法
-
-### プロジェクトから直接実行
-
-uvを使用してプロジェクトディレクトリから直接実行できます。  
-
-プロジェクトディレクトリ外から実行する場合は、
-`--directory` オプションでプロジェクトディレクトリを指定してください。
+インストール後は、toolとして `updsts` コマンドを直接使用できます.  
 
 ```bash
-# uvを使用（プロジェクトディレクトリから）
-# プロファイルのSTS認証情報を取得・更新
-uv run [--directory {project_dir}] -m updsts get -n "profile_name" -t "123456"
-
-# 全AWSプロファイルを一覧表示
-uv run [--directory {project_dir}] -m updsts list
-
-# MCPサーバーとして起動
-uv run [--directory {project_dir}] -m updsts mcp --mcp-server
+updsts --help
 ```
 
-### モジュールパッケージをPython環境にインストール
+## 5. MCPサーバーとして登録する
 
-ビルドしたモジュールパッケージをpipコマンドでインストールして使用することも可能です。
-
-```bash
-# pipでインストールする場合は以下のコマンドを実行
-# モジュールパッケージをインストール
-python -m pip install updsts-<version>.tar.gz
-# またはwheelファイルをインストール
-python -m pip pip install updsts-<version>-py3-none-any.whl
-
-# uvでインストールする場合は以下のコマンドを実行
-uv pip install updsts-<version>.tar.gz
-# またはwheelファイルをインストール
-uv pip install updsts-<version>-py3-none-any.whl
-```
-
-インストール後は以下のようにコマンドを実行できます:
-
-```bash
-# プロファイルのSTS認証情報を取得・更新
-python -m updsts get -n "profile_name" -t "123456"
-# 全AWSプロファイルを一覧表示
-python -m updsts list
-# MCPサーバーとして起動
-python -m updsts mcp --mcp-server
-```
-
-### MCPサーバーとして登録
-
-MCPサーバーとして登録することで、一般的なエージェントツールからupdsts を操作できます。
+MCPサーバーとして登録することで、一般的なエージェントツールから updsts を操作できます。
 
 ```json
 {
@@ -139,47 +83,30 @@ MCPサーバーとして登録することで、一般的なエージェント�
     // uvを使用してupdsts をMCPサーバーとして起動する設定
     "updsts-uv": {
       "type": "stdio",
-      "command": "uv",
+      "command": "updsts",
       "args": [
-          "run",
-          "--directory",
-          "${path_to_this_project}",
-          "-m",
-          "updsts",
           "mcp",
           "--mcp-server"
       ],
       "env": {},
-    },
-    // モジュールがPython環境にインストールされている場合の起動設定
-    "updsts-py": {
-      "type": "stdio",
-      "command": "python",
-      "args": [
-          "-m",
-          "updsts",
-          "mcp",
-          "--mcp-server"
-      ],
-      "env": {}
     }
   }
 }
 ```
 
-## CUIツール コマンドオプション
+## 6. CUIツール コマンドオプション
 
-### 共通オプション
+### 6-1. 共通オプション
 
 - `-v, --verbose LEVEL`: 出力情報の詳細レベルを設定 (0: 通常, 1: 詳細, 2: デバッグ)
 - `-c, --credential-file FILE`: AWS認証情報ファイルのパス (デフォルト: ~/.aws/credentials)
 
-### get コマンド
+### 6-2. `get` コマンド
 
 指定されたAWSプロファイルのSTS認証情報を取得・更新します。
 
 ```bash
-uv run [--directory {project_dir}] -m updsts get -n <profile_name> -t <totp_token>
+updsts get -n <profile_name> -t <totp_token>
 ```
 
 - `-n, --profile`: STSトークンを取得するAWSプロファイル名 (必須)
@@ -188,32 +115,32 @@ uv run [--directory {project_dir}] -m updsts get -n <profile_name> -t <totp_toke
 - `-d, --duration`: トークン持続時間（秒）(オプション、デフォルト: 3600)
 - `-c, --credential-file`: 認証情報ファイルのパス. (オプション、デフォルト: ~/.aws/credentials)
 
-### list コマンド
+### 6-3. `list` コマンド
 
 認証情報ファイル内のすべてのAWSプロファイルを表示します。
 
 ```bash
-uv run [--directory {project_dir}] -m updsts list
+updsts list
 ```
 
-### mcp コマンド
+### 6-4. `mcp` コマンド
 
 モジュールをローカルMCPサーバーとして起動します。  
 エージェントツールを使用してupdsts を操作できます。
 
 ```bash
-uv run [--directory {project_dir}] -m updsts mcp --mcp-server
+updsts mcp --mcp-server
 ```
 
 `--mcp-server` オプションが指定されていない場合、MCPツールリストを出力します。
 
 ```bash
-uv run [--directory {project_dir}] -m updsts mcp
+updsts mcp
 ```
 
-## AWS認証情報ファイル
+## 7. AWS認証情報ファイル
 
-### AWS認証情報ファイル形式
+### 7-1. AWS認証情報ファイル形式
 
 updsts は AWS CLI の標準的なAWS認証情報ファイル形式を操作します。  
 既存のプロファイルを保持しながら、指定されたセクションのみを更新します。  
@@ -245,7 +172,7 @@ expiration_datetime = 2025-10-05T15:30:00+09:00
 updstsは特別なタグ間のセクションを自動的に管理し、他のプロファイルはそのまま保持します.  
 タグは初回の実行時に自動的に追加されるため、手動で追加する必要はありません。
 
-### AWS認証情報ファイルの場所
+### 7-2. AWS認証情報ファイルの場所
 
 デフォルトでは、AWS認証情報は以下の場所に保存されます.  
 ※ aws cli が使用するファイルと同じです.  
@@ -256,7 +183,7 @@ updstsは特別なタグ間のセクションを自動的に管理し、他の�
 
 `-c` オプションで別の場所のファイルを指定できます.  
 
-## 提供される MCP tool 一覧
+## 8. 提供される MCP tool 一覧
 
 MCPサーバーとして起動した場合、以下のtoolがAgentから利用可能です.
 
@@ -295,11 +222,11 @@ credentialファイル内のすべてのAWSプロファイルの情報を取得�
     - Noneまたは空文字列の場合、デフォルトの場所(~/.aws/credentials)が使用されます (デフォルト: None)
 - 戻り値 (list[dict[str, str]]): 認証情報の詳細を含む辞書のリスト、またはプロファイルが見つからない場合は空リスト
 
-## セキュリティに関する注意事項
+## 9. セキュリティに関する注意事項
 
 - AWS認証情報ファイルには機密情報が含まれているため、適切な権限設定で保護してください (推奨: 600)
 
-## ライセンス
+## 10. ライセンス
 
 このプロジェクトはMIT ライセンスの下でライセンスされています。  
 詳細については[LICENSE](LICENSE)ファイルを参照してください。  
