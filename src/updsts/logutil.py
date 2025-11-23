@@ -69,7 +69,7 @@ def get_with_init(
             # If file handler creation fails, we just skip it and only use console handler
             pass
 
-        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler = logging.StreamHandler(sys.stderr)
         console_handler.setFormatter(formatter)
         console_handler.setLevel(console_level)
         logger_obj.addHandler(console_handler)

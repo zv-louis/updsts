@@ -28,7 +28,7 @@ def run_as_mcp_server():
     logger = get_logger()
     try:
         logger.info("Starting awssts MCP server with stdio transport")
-        mcp.run(transport="stdio")
+        mcp.run(transport="stdio", show_banner=False)
     except Exception as e:
         logger.error(f"Failed to start MCP server: {str(e)}")
         logger.debug(f"Traceback: {traceback.format_exc()}")
