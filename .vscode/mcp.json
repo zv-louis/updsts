@@ -1,6 +1,6 @@
 {
     "servers": {
-        "updsts": {
+        "updsts-ws": {
             "type": "stdio",
             "command": "uv",
             "args": [
