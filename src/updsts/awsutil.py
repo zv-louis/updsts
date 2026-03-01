@@ -283,8 +283,9 @@ def update_credentials(profile_name: str,
             updater.set_credentials(sts_credentials)
             updater.set_sts_profile_name(sts_profile_name)
             ret = updater.update_credential_file()
-            logger.info(f"Credentials for profile '{profile_name}' updated successfully.")
-            print(f"Credentials for profile '{profile_name}' updated successfully.")
+            logger.info(f"STS Credentials for profile '{profile_name}' updated successfully.")
+            print(f"STS Credentials of profile '{profile_name}' updated successfully.")
+            print(f"The temporary credential({ret.get("updated_profile_name", '')}) will expire at: {sts_credentials.get('Expiration', '')}")
         else:
             logger.error("Failed to retrieve STS credentials.")
             raise Exception("Failed to retrieve STS credentials.")

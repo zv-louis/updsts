@@ -121,7 +121,7 @@ class CredentialUpdater:
                             fout.write(line)
 
                 if not updated_profile_info:
-                    logger.warning(f"key='{self.target_tag_name}' not found in the credential file.")
+                    logger.warning(f"the target block key='{self.target_tag_name}' is not found. creating new block for the target key.")
                     # create section
                     aws_access_key_id     = self.creds.get("AccessKeyId",     "")
                     aws_secret_access_key = self.creds.get("SecretAccessKey", "")
