@@ -14,25 +14,30 @@ from .logutil import get_logger
 from .upcred import CredentialUpdater
 
 # ----------------------------------------------------------------------------
-def mask_string(s: str, unmask_chars: int = 4, max_strlen = 16) -> str:
+def mask_string(s: str,
+                unmask_chars_head: int = 4,
+                unmask_chars_tail: int = 4,
+                max_strlen = 16) -> str:
     """
-    Mask all but the first `unmask_chars` characters of the input string `s`.
+    Mask the middle characters of the input string `s`, leaving head and tail visible.
 
     Args:
         s (str): The input string to mask
-        unmask_chars (int, optional): Number of characters to show at the beginning. Defaults to 4.
-        max_strlen (int, optional): Maximum length before truncation. Defaults to 16.
+        unmask_chars_head (int, optional): Number of characters to show at the beginning. Defaults to 4.
+        unmask_chars_tail (int, optional): Number of characters to show at the end. Defaults to 4.
+        max_strlen (int, optional): Maximum display length before truncation. Defaults to 16.
 
     Returns:
         str: Masked string with the following behavior:
-            - If string length <= unmask_chars: returns the string as is
-            - If string length > max_strlen: shows first unmask_chars + masked chars + ' (total_length chars)'
-            - Otherwise: shows first unmask_chars + masked remaining characters
+            - If string length <= unmask_chars_head + unmask_chars_tail: returns the string as is
+            - If string length > max_strlen: shows head + masked chars + tail + ' (total_length chars)'
+            - Otherwise: shows head + masked middle + tail
 
     Examples:
-        mask_string("abc", 4) -> "abc"
-        mask_string("abcdef", 4) -> "abcd**"
-        mask_string("very_long_string_example", 4, 16) -> "very************ (24 chars)"
+        mask_string("abc", 4, 4) -> "abc"
+        mask_string("abcdefgh", 4, 0) -> "abcd****"
+        mask_string("abcdefgh", 4, 2) -> "abcd**gh"
+        mask_string("very_long_string_example", 4, 4, 16) -> "very********ple (24 chars)"
     """
     if not s:
         return ''
@@ -40,24 +45,24 @@ def mask_string(s: str, unmask_chars: int = 4, max_strlen = 16) -> str:
     # Strip whitespace and newlines from input
     s = s.strip()
     str_len = len(s)
-    if str_len <= unmask_chars:
+    if str_len <= unmask_chars_head + unmask_chars_tail:
         return s
 
-    # Handle long strings by truncating first, then masking
+    tail_part = s[-unmask_chars_tail:] if unmask_chars_tail > 0 else ''
+
+    # Handle long strings
     if str_len > max_strlen:
-        # Reserve space for '...' (3 chars) and unmask_chars
         truncate_len = max_strlen
-        if truncate_len <= unmask_chars:
-            # If we can't fit both unmask_chars and '...', just show first few chars + '...'
-            return s[:max(1, max_strlen)] 
-        # Show first unmask_chars, then mask middle part, then '...'
-        middle_mask_len = truncate_len - unmask_chars
+        middle_mask_len = truncate_len - unmask_chars_head - unmask_chars_tail
+        if middle_mask_len <= 0:
+            return s[:unmask_chars_head] + tail_part + f' ({str_len} chars)'
         masked_part = '*' * middle_mask_len
-        return s[:unmask_chars] + masked_part + f' ({str_len} chars)'
+        return s[:unmask_chars_head] + masked_part + tail_part + f' ({str_len} chars)'
 
     # Normal masking for strings within max_strlen
-    masked_part = '*' * (len(s) - unmask_chars)
-    return s[:unmask_chars] + masked_part
+    middle_mask_len = str_len - unmask_chars_head - unmask_chars_tail
+    masked_part = '*' * middle_mask_len
+    return s[:unmask_chars_head] + masked_part + tail_part
 
 
 # ----------------------------------------------------------------------------
@@ -204,17 +209,20 @@ def get_profile_info(profile_name: str,
         }
         for key, value in config.items(profile_name):
             # Remove whitespace and newlines from log output
-            safe_value = value.strip() if value else value
-            logger.debug(f"Profile '{profile_name}': {key} = {safe_value}")
+            raw_sensitive_value = value.strip() if value else value
+            logger.debug(f"Profile '{profile_name}': {key} = {raw_sensitive_value}")
             # Mask secret key and session token if required
-            if key == 'aws_secret_access_key':
-                secret_key = mask_string(safe_value) if (safe_value and secret_mask) else safe_value
+            if key == 'aws_access_key_id':
+                secret_key_id = mask_string(raw_sensitive_value) if (raw_sensitive_value and secret_mask) else raw_sensitive_value
+                item_dic[key] = secret_key_id
+            elif key == 'aws_secret_access_key':
+                secret_key = mask_string(raw_sensitive_value) if (raw_sensitive_value and secret_mask) else raw_sensitive_value
                 item_dic[key] = secret_key
             elif key == 'aws_session_token':
-                session_token = mask_string(safe_value) if (safe_value and secret_mask) else safe_value
+                session_token = mask_string(raw_sensitive_value) if (raw_sensitive_value and secret_mask) else raw_sensitive_value
                 item_dic[key] = session_token
             else:
-                item_dic[key] = safe_value
+                item_dic[key] = raw_sensitive_value
         item_dic['profile_name'] = profile_name
         return item_dic
     except (NoSectionError) as e:
