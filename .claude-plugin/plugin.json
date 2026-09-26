@@ -1,0 +1,10 @@
+{
+  "name": "updsts-mcp",
+  "description": "Get and update AWS STS credential using existing AWS profile.",
+  "version": "0.8.8",
+  "author": {
+    "name": "kanok-one",
+    "email": "zervoid77@gmail.com"
+  },
+  "license": "MIT"
+}

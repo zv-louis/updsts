@@ -1,6 +1,6 @@
 [project]
 name = "updsts"
-version = "0.8.7"
+version = "0.8.8"
 description = "Get and update AWS STS credential using existing AWS profile."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -13,6 +13,9 @@ dependencies = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/updsts"]
 
 [project.scripts]
 updsts = "updsts.__main__:main"

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "zv-updsts": {
+      "command": "uv",
+      "args": [
+        "run",
+        "${CLAUDE_PLUGIN_ROOT:-.}/src/updsts_main.py",
+        "mcp",
+        "--mcp-server"
+      ]
+    }
+  }
+}

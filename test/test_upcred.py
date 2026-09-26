@@ -1,4 +1,4 @@
-# encoding: utf-8-sig
+﻿# encoding: utf-8-sig
 
 import pytest
 import os
@@ -205,3 +205,36 @@ aws_access_key_id=AKIAIOSFODNN7EXAMPLE
         
         # Verify original file exists
         assert credentials_file.exists()
+
+    def test_update_credential_file_message_handler(self, temp_file_factory, sample_credentials, capsys):
+        """Test 'found key' message is passed to the message handler (CLI mode)."""
+        credentials_content = """# ${{{ key=test_profile [auto update by updsts]
+[test_profile_sts]
+aws_access_key_id=old_access_key
+# $}}} [auto update by updsts]
+"""
+        credentials_file = temp_file_factory(credentials_content, "credentials")
+        updater = CredentialUpdater(credentials_file)
+        updater.set_target_tag_name("test_profile")
+        updater.set_credentials(sample_credentials)
+        updater.set_message_handler(print)
+
+        updater.update_credential_file()
+
+        assert capsys.readouterr().out == "found key : key='test_profile'\n"
+
+    def test_update_credential_file_without_message_handler(self, temp_file_factory, sample_credentials, capsys):
+        """Test nothing is written to stdout without a message handler (MCP mode)."""
+        credentials_content = """# ${{{ key=test_profile [auto update by updsts]
+[test_profile_sts]
+aws_access_key_id=old_access_key
+# $}}} [auto update by updsts]
+"""
+        credentials_file = temp_file_factory(credentials_content, "credentials")
+        updater = CredentialUpdater(credentials_file)
+        updater.set_target_tag_name("test_profile")
+        updater.set_credentials(sample_credentials)
+
+        updater.update_credential_file()
+
+        assert capsys.readouterr().out == ""

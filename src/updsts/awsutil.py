@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from botocore.exceptions import BotoCoreError, ClientError
 from configparser import ConfigParser, NoSectionError, NoOptionError
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 
 from .logutil import get_logger
 from .upcred import CredentialUpdater
@@ -37,7 +37,7 @@ def mask_string(s: str,
         mask_string("abc", 4, 4) -> "abc"
         mask_string("abcdefgh", 4, 0) -> "abcd****"
         mask_string("abcdefgh", 4, 2) -> "abcd**gh"
-        mask_string("very_long_string_example", 4, 4, 16) -> "very********ple (24 chars)"
+        mask_string("very_long_string_example", 4, 4, 16) -> "very********mple (24 chars)"
     """
     if not s:
         return ''
@@ -272,9 +272,12 @@ def update_credentials(profile_name: str,
                        duration: int = 3600,
                        sts_profile_name: str | None = None,
                        target_key: str | None = None,
-                       cred_file: str | os.PathLike | None = None) -> dict[str, str] | None:
+                       cred_file: str | os.PathLike | None = None,
+                       message_handler: Callable[[str], None] | None = None) -> dict[str, str] | None:
     """
     Update the AWS credentials file with new STS tokens.
+    message_handler receives user-facing progress messages (e.g. print for CLI).
+    Leave it None in MCP mode so that nothing is written to stdout.
     """
     logger = get_logger()
     ret = None
@@ -290,10 +293,9 @@ def update_credentials(profile_name: str,
             updater.set_target_tag_name(target_key)
             updater.set_credentials(sts_credentials)
             updater.set_sts_profile_name(sts_profile_name)
+            updater.set_message_handler(message_handler)
             ret = updater.update_credential_file()
             logger.info(f"STS Credentials for profile '{profile_name}' updated successfully.")
-            print(f"STS Credentials of profile '{profile_name}' updated successfully.")
-            print(f"The temporary credential({ret.get("updated_profile_name", '')}) will expire at: {sts_credentials.get('Expiration', '')}")
         else:
             logger.error("Failed to retrieve STS credentials.")
             raise Exception("Failed to retrieve STS credentials.")

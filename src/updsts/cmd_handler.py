@@ -26,12 +26,16 @@ def handle_get(args):
     sts_profile_name = args.sts_profile_name if hasattr(args, 'sts_profile_name') and args.sts_profile_name else None
     target_key = args.target_key if hasattr(args, 'target_key') and args.target_key else None
 
-    update_credentials(profile_name=profile_name,
-                       totp_token=totp_token,
-                       duration=duration,
-                       sts_profile_name=sts_profile_name,
-                       target_key=target_key,
-                       cred_file=cred_file)
+    ret = update_credentials(profile_name=profile_name,
+                             totp_token=totp_token,
+                             duration=duration,
+                             sts_profile_name=sts_profile_name,
+                             target_key=target_key,
+                             cred_file=cred_file,
+                             message_handler=print)
+    if ret:
+        print(f"STS Credentials of profile '{profile_name}' updated successfully.")
+        print(f"The temporary credential({ret.get('updated_profile_name', '')}) will expire at: {ret.get('aws_token_expiration', '')}")
 
 # ----------------------------------------------------------------------------
 def handle_list(args):

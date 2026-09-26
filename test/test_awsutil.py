@@ -1,4 +1,4 @@
-# encoding: utf-8-sig
+﻿# encoding: utf-8-sig
 
 import pytest
 import os
@@ -23,26 +23,28 @@ class TestMaskString:
         assert mask_string("") == ""
     
     def test_mask_string_short(self):
-        """Test masking string shorter than unmask_chars."""
+        """Test masking string not longer than unmask_chars_head + unmask_chars_tail."""
         assert mask_string("abc", 4) == "abc"
         assert mask_string("ab", 4) == "ab"
+        assert mask_string("abcdefgh", 4, 4) == "abcdefgh"
     
     def test_mask_string_normal(self):
         """Test normal masking."""
-        assert mask_string("abcdef", 4) == "abcd**"
-        assert mask_string("password123", 4) == "pass*******"
+        assert mask_string("abcdefgh", 4, 0) == "abcd****"
+        assert mask_string("abcdefgh", 4, 2) == "abcd**gh"
+        assert mask_string("password123", 4) == "pass***d123"
     
     def test_mask_string_long(self):
         """Test masking very long string."""
         long_string = "very_long_string_example_that_exceeds_max_length"
-        result = mask_string(long_string, 4, 16)
-        assert result.startswith("very")
+        result = mask_string(long_string, 4, 4, 16)
+        assert result == f"very********ngth ({len(long_string)} chars)"
         assert "chars)" in result
         assert str(len(long_string)) in result
     
     def test_mask_string_whitespace(self):
         """Test masking string with whitespace."""
-        assert mask_string("  test  ", 2) == "te**"
+        assert mask_string("  testcase  ", 2, 2) == "te****se"
 
 
 @pytest.mark.unit
@@ -95,8 +97,8 @@ class TestProfileInfo:
         # Check that the secret key is masked (contains asterisks)
         secret_key = profile_info['aws_secret_access_key']
         assert '*' in secret_key and secret_key.startswith('wJal')
-        # Check that access key is not masked
-        assert profile_info['aws_access_key_id'] == 'AKIAIOSFODNN7EXAMPLE'
+        # Check that access key is also masked
+        assert profile_info['aws_access_key_id'] == 'AKIA********MPLE (20 chars)'
     
     def test_get_profile_info_nonexistent(self, credentials_file):
         """Test getting non-existent profile information."""
@@ -139,4 +141,4 @@ class TestProfileInfo:
             get_profile_info("default", "/nonexistent/path/credentials")
         
         with pytest.raises(FileNotFoundError):
-            get_profile_list("/nonexistent/path/credentials")
+            get_profile_list("/nonexistent/path/credentials")

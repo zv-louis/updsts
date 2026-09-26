@@ -2,6 +2,7 @@
 
 import os
 import re
+from typing import Callable
 
 from argparse import ArgumentParser
 from pathlib import Path
@@ -19,6 +20,7 @@ class CredentialUpdater:
         self.target_tag_name = None
         self.credential_file_path = None
         self.sts_profile_name = None
+        self.message_handler = None
         if (credential_path):
             self.set_credentials_path(credential_path)
 
@@ -58,6 +60,15 @@ class CredentialUpdater:
         self.sts_profile_name = sts_profile_name
 
     # ----------------------------------------------------------------------------
+    def set_message_handler(self, message_handler: Callable[[str], None] | None):
+        """
+        set message handler for user-facing progress messages
+        Args:
+            message_handler (Callable[[str], None] | None): e.g. print for CLI. None to suppress.
+        """
+        self.message_handler = message_handler
+
+    # ----------------------------------------------------------------------------
     def update_credential_file(self) -> dict[str, str] | None:
         """
         update the credentials file
@@ -85,7 +96,10 @@ class CredentialUpdater:
                             matched_whitespaces = obj.group(1)
                             matched_key         = obj.group(2)
                             if (self.target_tag_name == matched_key):
-                                print(f"found key : key='{self.target_tag_name}'")
+                                msg = f"found key : key='{self.target_tag_name}'"
+                                logger.info(msg)
+                                if self.message_handler:
+                                    self.message_handler(msg)
                                 # write credentials
                                 aws_access_key_id     = self.creds.get("AccessKeyId",     "")
                                 aws_secret_access_key = self.creds.get("SecretAccessKey", "")

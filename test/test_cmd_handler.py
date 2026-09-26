@@ -1,4 +1,4 @@
-# encoding: utf-8-sig
+﻿# encoding: utf-8-sig
 
 import pytest
 from unittest.mock import patch, MagicMock
@@ -31,7 +31,8 @@ class TestCmdHandler:
                 duration=7200,
                 sts_profile_name=None,
                 target_key=None,
-                cred_file=mock_cred_file
+                cred_file=mock_cred_file,
+                message_handler=print
             )
     
     def test_handle_get_without_credential_file(self):
@@ -53,7 +54,8 @@ class TestCmdHandler:
                 duration=3600,
                 sts_profile_name=None,
                 target_key=None,
-                cred_file=None
+                cred_file=None,
+                message_handler=print
             )
     
     def test_handle_get_with_all_parameters(self):
@@ -77,7 +79,8 @@ class TestCmdHandler:
                 duration=7200,
                 sts_profile_name='custom_sts',
                 target_key='custom_key',
-                cred_file='/path/to/creds'
+                cred_file='/path/to/creds',
+                message_handler=print
             )
     
     def test_handle_list_with_profiles(self, temp_dir):
@@ -177,4 +180,4 @@ class TestCmdHandler:
         # Act & Assert
         with patch('updsts.cmd_handler.disp_tools') as mock_disp_tools:
             handle_mcp(args)
-            mock_disp_tools.assert_called_once()
+            mock_disp_tools.assert_called_once()
