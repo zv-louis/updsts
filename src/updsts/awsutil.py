@@ -295,6 +295,9 @@ def update_credentials(profile_name: str,
             updater.set_sts_profile_name(sts_profile_name)
             updater.set_message_handler(message_handler)
             ret = updater.update_credential_file()
+            # The result may be returned to the LLM via MCP, so never expose the raw access key id.
+            if ret and ret.get('aws_access_key_id'):
+                ret['aws_access_key_id'] = mask_string(ret['aws_access_key_id'])
             logger.info(f"STS Credentials for profile '{profile_name}' updated successfully.")
         else:
             logger.error("Failed to retrieve STS credentials.")

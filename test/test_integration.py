@@ -185,7 +185,9 @@ class TestSTSIntegration:
         # Assert
         assert result is not None
         assert result['updated_profile_name'] == 'test_profile_sts'
-        
+        # access key id must be masked in the returned value
+        assert result['aws_access_key_id'] == 'ASIA********MPLE (20 chars)'
+
         # Verify function calls
         mock_get_sts_token.assert_called_once_with(
             profile_name='test_profile',

@@ -1,86 +1,95 @@
 # updsts
 
-A simple CUI tool and local MCP server for reflecting AWS STS credential information into the credential file
+A simple CUI tool and local MCP server for reflecting AWS STS credentials into the credentials file
 
 English | [日本語](README_ja.md)
 
 <!-- TOC tocDepth:2..3 chapterDepth:2..6 -->
 
-- [1. Overview](#1-overview)
-- [2. Features](#2-features)
-- [3. Runtime Environment](#3-runtime-environment)
-- [4. Installation / Usage](#4-installation-usage)
-- [5. Registering as MCP Server](#5-registering-as-mcp-server)
-- [6. CUI Tool Command Options](#6-cui-tool-command-options)
-  - [6-1. Common Options](#6-1-common-options)
-  - [6-2. `get` Command](#6-2-get-command)
-  - [6-3. `list` Command](#6-3-list-command)
-  - [6-4. `mcp` Command](#6-4-mcp-command)
-- [7. AWS Credentials File](#7-aws-credentials-file)
-  - [7-1. AWS Credentials File Format](#7-1-aws-credentials-file-format)
-  - [7-2. AWS Credentials File Storage Location](#7-2-aws-credentials-file-storage-location)
-- [8. Available MCP Tools](#8-available-mcp-tools)
-  - [`updsts_update_sts_credential`](#updsts_update_sts_credential)
-  - [`updsts_get_credential_info`](#updsts_get_credential_info)
-  - [`updsts_get_credential_info_list`](#updsts_get_credential_info_list)
-- [9. Security Notes](#9-security-notes)
-- [10. License](#10-license)
+- [updsts](#updsts)
+  - [1. Overview](#1-overview)
+  - [2. Features](#2-features)
+  - [3. Runtime Environment](#3-runtime-environment)
+  - [4. Installation/Usage](#4-installationusage)
+    - [4-1. Install as a uv tool](#4-1-install-as-a-uv-tool)
+      - [4-1-1. Installation](#4-1-1-installation)
+      - [4-1-2. Registering as an MCP server](#4-1-2-registering-as-an-mcp-server)
+    - [4-2. Registering as an MCP server via the Claude plugin](#4-2-registering-as-an-mcp-server-via-the-claude-plugin)
+  - [5. CUI Tool Command Options](#5-cui-tool-command-options)
+    - [5-1. Common Options](#5-1-common-options)
+    - [5-2. `get` Command](#5-2-get-command)
+    - [5-3. `list` Command](#5-3-list-command)
+    - [5-4. `mcp` Command](#5-4-mcp-command)
+  - [6. Credentials File](#6-credentials-file)
+    - [6-1. Credentials File Format](#6-1-credentials-file-format)
+    - [6-2. Credentials File Location](#6-2-credentials-file-location)
+  - [7. Available MCP Tools](#7-available-mcp-tools)
+    - [`updsts_update_sts_credential`](#updsts_update_sts_credential)
+    - [`updsts_get_credential_info`](#updsts_get_credential_info)
+    - [`updsts_get_credential_info_list`](#updsts_get_credential_info_list)
+  - [8. Security Notes](#8-security-notes)
+  - [9. License](#9-license)
 
 <!-- /TOC -->
 
 ## 1. Overview
 
-updsts is a command-line tool that retrieves AWS STS (Security Token Service) credentials from existing AWS credential (.aws/credentials) file information and automatically reflects them in the credential file.  
-It also has local MCP server functionality that automatically updates temporary credential information in AWS credential files, enabling operation through common Agent tools.
+updsts is a command-line tool that retrieves AWS STS (Security Token Service) credentials using the credentials already registered in an existing credentials file (~/.aws/credentials). The retrieved credentials are automatically reflected in the same file.  
+It also works as a local MCP server that automatically updates the temporary credentials in the credentials file, so it can be operated from common Agent tools.
 
 ## 2. Features
 
 - Obtain temporary AWS STS credentials using MFA authentication
-- Automatically update AWS credentials file with new session tokens
+- Automatically update the STS profile in the credentials file with the new credentials
 - Support for TOTP-based MFA devices
-- List all AWS profiles in credentials file
-- Preserve existing credential profiles safely
-- Can be operated from common Agent tools when functioning as a local MCP server.  
+- List all AWS profiles in the credentials file
+- Leave profiles other than the one being updated untouched
+- Can be operated from common Agent tools when running as a local MCP server  
   (Of course, care is taken to ensure that confidential information such as secret keys and session tokens is not sent to the LLM.)
 - Support for proxy environments
 
 ## 3. Runtime Environment
 
 This project uses uv as the package manager.  
-Using uv allows you to automatically reproduce the runtime environment.  
+Using uv allows you to reproduce the runtime environment automatically.  
 
-For uv installation, see here:
+For how to install uv, see:
 
 - [Installing uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-## 4. Installation / Usage
+## 4. Installation/Usage
 
-Install and use in a uv environment.
+### 4-1. Install as a uv tool
+
+Install updsts into a uv environment and use it.  
+Use this method when you use updsts as a CUI tool.  
+
+#### 4-1-1. Installation
 
 ```bash
 # Install directly from git repository
 uv tool install git+{repository_url}
 ```
 
-After installation, you can use the `updsts` command directly as a tool.
+After installation, you can run the `updsts` command directly.  
 
 ```bash
 updsts --help
 ```
 
-## 5. Registering as MCP Server
+#### 4-1-2. Registering as an MCP server
 
-By registering as an MCP server, you can operate updsts from common Agent tools.
+By registering updsts as an MCP server, you can operate it from common Agent tools.
 
-```json
+```jsonc
 {
-  // Example configuration for registering as MCP server
+  // Example configuration for registering as an MCP server
   //
-  // (Note) 
+  // (Note)
   // Registration keys may differ depending on the Agent tool used,
-  // so please refer to the manual of each Agent tool you use for detailed procedures.
-  "mcpServers" {
-    // Configuration for starting updsts as MCP server using uv
+  // so please refer to the manual of the Agent tool you use for detailed procedures.
+  "mcpServers": {
+    // Configuration for starting updsts as an MCP server using uv
     "updsts-uv": {
       "type": "stdio",
       "command": "updsts",
@@ -88,64 +97,76 @@ By registering as an MCP server, you can operate updsts from common Agent tools.
           "mcp",
           "--mcp-server"
       ],
-      "env": {},
+      "env": {}
     }
   }
 }
 ```
 
-## 6. CUI Tool Command Options
+### 4-2. Registering as an MCP server via the Claude plugin
 
-### 6-1. Common Options
+updsts can be installed as a Claude plugin.  
 
-- `-v, --verbose LEVEL`: Set output information detail level (0: normal, 1: verbose, 2: debug)
-- `-c, --credential-file FILE`: Path to the AWS credentials file (default: ~/.aws/credentials)
+```bash
+# Add the marketplace
+/plugin marketplace add zv-louis/zv-plugin-marketplace
+# Install from the marketplace
+/plugin install updsts-mcp@zv-plugins
+```
 
-### 6-2. `get` Command
+## 5. CUI Tool Command Options
 
-Get and update STS credentials for the specified AWS profile.
+### 5-1. Common Options
+
+- `-v, --verbose LEVEL`: Set the output verbosity (0: normal, 1: verbose, 2: debug)
+- `-c, --credential_file FILE`: Path to the credentials file (default: ~/.aws/credentials)
+
+### 5-2. `get` Command
+
+Get and update the STS credentials for the specified AWS profile.
 
 ```bash
 updsts get -n <profile_name> -t <totp_token>
 ```
 
-- `-n, --profile`: AWS profile name to get STS token (required)
-- `-t, --totp-token`: TOTP token generated by MFA device (required)
-- `-sn, --sts-profile-name`: STS profile name to generate in AWS credentials file (optional, default: AWS profile name + "_sts")
+- `-n, --profile_name`: AWS profile name to get the STS token for (required)
+- `-t, --totp_token`: TOTP token generated by the MFA device (required)
+- `-sn, --sts_profile_name`: STS profile name to create in the credentials file (optional, default: AWS profile name + "_sts")
 - `-d, --duration`: Token duration in seconds (optional, default: 3600)
-- `-c, --credential-file`: Path to credentials file (optional, default: ~/.aws/credentials)
+- `-c, --credential_file`: Path to the credentials file (optional, default: ~/.aws/credentials)
 
-### 6-3. `list` Command
+### 5-3. `list` Command
 
-Display all AWS profiles in the credentials file.
+Display all AWS profiles in the credentials file.  
+Secrets (`aws_access_key_id`, `aws_secret_access_key`, `aws_session_token`) are displayed masked.
 
 ```bash
 updsts list
 ```
 
-### 6-4. `mcp` Command
+### 5-4. `mcp` Command
 
-Start the module as a local MCP server.  
-You can operate updsts using Agent tools.
+Start updsts as a local MCP server.  
+You can operate updsts from Agent tools.
 
 ```bash
 updsts mcp --mcp-server
 ```
 
-If the `--mcp-server` option is not specified, it will output the MCP tool list.
+If the `--mcp-server` option is not specified, the MCP tool list is output.
 
 ```bash
 updsts mcp
 ```
 
-## 7. AWS Credentials File
+## 6. Credentials File
 
-### 7-1. AWS Credentials File Format
+### 6-1. Credentials File Format
 
-updsts works with standard AWS CLI credentials file format.  
-It preserves existing profiles while updating only the specified sections.  
+updsts works with the standard AWS CLI credentials file format.  
+It preserves existing profiles while updating only the specified section.  
 
-Example credentials file:
+Example credentials file:  
 
 ```ini
 [default]
@@ -153,14 +174,14 @@ Example credentials file:
 aws_access_key_id = AKIAIOSFODNN7EXAMPLE
 # Secret Access Key (required)
 aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLE
-# IAM user's MFA device ARN (required. User must add this)
+# IAM user's MFA device ARN (required. The user must add this)
 mfa_device_arn = arn:aws:iam::123456789012:mfa/user 
-# TOTP secret name managed by mktotp mcp server (optional. User can add this)
-# If this is configured and the `mktotp` mcp server is available, Agent will auto-generate and use TOTP token.
+# TOTP secret name managed by the mktotp MCP server (optional. The user can add this)
+# If this is set and the `mktotp` MCP server is available, the Agent will automatically generate and use the TOTP token.
 totp_secret_name = my_totp_secret 
 
 # The section enclosed by the following tags is automatically created/updated by updsts.
-# ${{{ key=<profile name that requested STS> [auto update by updsts]
+# ${{{ key=<name of the profile that requested STS> [auto update by updsts]
 [default_sts]
 aws_access_key_id = ASIAIOSFODNN7EXAMPLE
 aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYtempKEY
@@ -169,64 +190,68 @@ expiration_datetime = 2025-10-05T15:30:00+09:00
 # $}}} [auto update by updsts]
 ```
 
-updsts automatically manages sections between special tags while leaving other profiles intact.  
-Tags are automatically added during the first execution, so there is no need to add them manually.
+updsts automatically manages the section between the special tags and leaves other profiles intact.  
+The tags are added automatically on the first run, so there is no need to add them manually.
 
-### 7-2. AWS Credentials File Storage Location
+### 6-2. Credentials File Location
 
-By default, AWS credentials are stored in the following location.  
-※ This is the same file used by the AWS CLI.
+By default, the credentials file is stored in the following location.  
+※ This is the same file used by the AWS CLI.  
 
 ```text
 ~/.aws/credentials
 ```
 
-You can specify a different location with the `-c` option.
+You can specify a different location with the `-c` option.  
 
-## 8. Available MCP Tools
+## 7. Available MCP Tools
 
 When started as an MCP server, the following tools are available from Agent tools.
 
 ### `updsts_update_sts_credential`
 
-Get STS credentials for the specified AWS profile and create/update the sts profile in the credential file.
+Get the STS credentials for the specified AWS profile and create/update the STS profile in the credentials file.
 
 - Parameters:
   - `profile_name` (str): AWS profile name to update (required)
-  - `totp_token` (str): TOTP token from MFA device (required)
-  - `sts_profile_name` (str | None): STS profile name to create in AWS credentials file (optional)
-    - If None or empty string, `<profile_name>_sts` will be used (default: None)
-  - `cred_file` (str | None): Path to credentials file (optional)
-    - If None or empty string, default location (~/.aws/credentials) is used (default: None)
+  - `totp_token` (str): TOTP token from the MFA device (required)
+  - `sts_profile_name` (str | None): STS profile name to create in the credentials file (optional)
+    - If None or an empty string, `<profile_name>_sts` is used (default: None)
+  - `cred_file` (str | None): Path to the credentials file (optional)
+    - If None or an empty string, the default location (~/.aws/credentials) is used (default: None)
   - `duration` (int): STS token duration in seconds (optional, default: 3600)
-- Returns (dict[str, str] | None): Dictionary containing updated credential details or None if failed
+- Returns (dict[str, str] | None): A dictionary containing the update result, or None on failure
+  - `updated_profile_name`: Name of the STS profile that was updated
+  - `aws_access_key_id`: Access key ID of the retrieved STS credentials (masked)
+  - `aws_token_expiration`: Expiration of the STS credentials (ISO 8601 format in the local time zone)
+  - The secret access key and the session token are not returned
 
 ### `updsts_get_credential_info`
 
-Get AWS credential information for the specified profile name in the credential file.  
-However, for security reasons, `aws_secret_access_key` and `aws_session_token` are returned masked.
+Get the information of the specified AWS profile in the credentials file.  
+For security reasons, `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` are returned masked.  
 
 - Parameters:
   - `profile_name` (str): AWS profile name to retrieve (required)
-  - `cred_file` (str | None): Path to credentials file (optional)
-    - If None or empty string, default location (~/.aws/credentials) is used (default: None)
-- Returns (dict[str, str] | None): Dictionary containing credential details or None if not found
+  - `cred_file` (str | None): Path to the credentials file (optional)
+    - If None or an empty string, the default location (~/.aws/credentials) is used (default: None)
+- Returns (dict[str, str] | None): A dictionary containing the credential details, or None if not found
 
 ### `updsts_get_credential_info_list`
 
-Get AWS credential information for all profiles in the credentials file.  
-However, for security reasons, `aws_secret_access_key` and `aws_session_token` are returned masked.
+Get the information of all AWS profiles in the credentials file.  
+For security reasons, `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` are returned masked.  
 
 - Parameters:
-  - `cred_file` (str | None): Path to credentials file (optional)
-    - If None or empty string, default location (~/.aws/credentials) is used (default: None)
-- Returns (list[dict[str, str]]): List of dictionaries containing credential details or empty list if no profiles found
+  - `cred_file` (str | None): Path to the credentials file (optional)
+    - If None or an empty string, the default location (~/.aws/credentials) is used (default: None)
+- Returns (list[dict[str, str]]): A list of dictionaries containing the credential details, or an empty list if no profiles are found
 
-## 9. Security Notes
+## 8. Security Notes
 
-- AWS credentials files contain sensitive information, so protect them with appropriate permission settings (recommended: 600)
+- The credentials file contains sensitive information, so protect it with appropriate permissions (recommended: 600)
 
-## 10. License
+## 9. License
 
 This project is licensed under the MIT License.  
-See the [LICENSE](LICENSE) file for details.
+See the [LICENSE](LICENSE) file for details.  
