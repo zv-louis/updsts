@@ -13,8 +13,10 @@ English | [日本語](README_ja.md)
   - [4. Installation/Usage](#4-installationusage)
     - [4-1. Install as a uv tool](#4-1-install-as-a-uv-tool)
       - [4-1-1. Installation](#4-1-1-installation)
-      - [4-1-2. Registering as an MCP server](#4-1-2-registering-as-an-mcp-server)
-    - [4-2. Registering as an MCP server via the Claude plugin](#4-2-registering-as-an-mcp-server-via-the-claude-plugin)
+    - [4-2. Using uvx](#4-2-using-uvx)
+      - [4-2-1. Running with the uvx command](#4-2-1-running-with-the-uvx-command)
+      - [4-2-2. Registering as an MCP server](#4-2-2-registering-as-an-mcp-server)
+    - [4-3. Registering as an MCP server via the Claude plugin](#4-3-registering-as-an-mcp-server-via-the-claude-plugin)
   - [5. CUI Tool Command Options](#5-cui-tool-command-options)
     - [5-1. Common Options](#5-1-common-options)
     - [5-2. `get` Command](#5-2-get-command)
@@ -67,8 +69,8 @@ Use this method when you use updsts as a CUI tool.
 #### 4-1-1. Installation
 
 ```bash
-# Install directly from git repository
-uv tool install git+{repository_url}
+# Install from PyPI
+uv tool install updsts
 ```
 
 After installation, you can run the `updsts` command directly.  
@@ -77,25 +79,40 @@ After installation, you can run the `updsts` command directly.
 updsts --help
 ```
 
-#### 4-1-2. Registering as an MCP server
+### 4-2. Using uvx
 
-By registering updsts as an MCP server, you can operate it from common Agent tools.
+Run updsts directly from PyPI with uvx, without installing it.
+
+#### 4-2-1. Running with the uvx command
+
+Start updsts with the uvx command.
+
+```bash
+uvx updsts --help
+# Add @latest to always use the latest version
+uvx updsts@latest --help
+```
+
+#### 4-2-2. Registering as an MCP server
+
+By registering updsts as an MCP server, you can operate it from common Agent tools.  
+For how to register an MCP server, refer to the manual of the Agent tool you use.
 
 ```jsonc
 {
   // Example configuration for registering as an MCP server
   //
   // (Note)
-  // Registration keys may differ depending on the Agent tool used,
-  // so please refer to the manual of the Agent tool you use for detailed procedures.
+  // Registration keys differ depending on the Agent tool.
   "mcpServers": {
-    // Configuration for starting updsts as an MCP server using uv
+    // Configuration for starting updsts as an MCP server using uvx
     "updsts-uv": {
       "type": "stdio",
-      "command": "updsts",
+      "command": "uvx",
       "args": [
-          "mcp",
-          "--mcp-server"
+        "updsts@latest",
+        "mcp",
+        "--mcp-server"
       ],
       "env": {}
     }
@@ -103,7 +120,7 @@ By registering updsts as an MCP server, you can operate it from common Agent too
 }
 ```
 
-### 4-2. Registering as an MCP server via the Claude plugin
+### 4-3. Registering as an MCP server via the Claude plugin
 
 updsts can be installed as a Claude plugin.  
 

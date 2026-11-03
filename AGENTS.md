@@ -21,10 +21,12 @@ src/updsts/
   logutil.py      ロガー（コンソール出力は stderr。MCP の stdio を汚さないため）
   mcp_server.py   FastMCP のツール定義（薄いラッパー）
   mcp_impl.py     MCP ツールの実装、例外を ValueError に揃える共通処理
-src/updsts_main.py  Claude プラグイン用の MCP 起動スクリプト（PEP 723 のインライン依存を持つ）
+src/updsts_main.py  ローカルのソースを MCP サーバーとして起動するスクリプト（PEP 723 のインライン依存を持つ）
 test/             モジュールごとの pytest
 .claude-plugin/   Claude Code プラグインのマニフェスト
-.mcp.json         プラグイン用 MCP サーバー設定（uv run src/updsts_main.py mcp --mcp-server）
+.mcp.json         プラグイン用 MCP サーバー設定（uvx updsts@latest mcp --mcp-server。PyPI 公開版を起動する）
+.vscode/mcp.json  ワークスペース用 MCP サーバー設定（uv run -m updsts mcp --mcp-server。手元のソースを起動する）
+.github/workflows/publish.yml  タグ push で TestPyPI → PyPI へ公開する（Trusted Publishing）
 ```
 
 処理の流れは、CLI なら `__main__.py` → `cmd_handler.py` → `awsutil.py` → `upcred.py`、MCP なら `mcp_server.py` → `mcp_impl.py` → `awsutil.py` → `upcred.py` となる。
@@ -87,3 +89,10 @@ uv run updsts --help    # ローカル実行
 - ログは stderr に出す。stdout は MCP の stdio 通信に使われる
 - 依存を変えるときは `pyproject.toml` と `src/updsts_main.py` のインライン依存の両方を更新する
 - バージョンは `pyproject.toml` と `.claude-plugin/plugin.json` の両方にある
+- `.mcp.json` は PyPI の公開版を起動する。ソースの変更を MCP 経由で試すときは `.vscode/mcp.json`（手元のソースを起動）を使う
+
+## 公開
+
+- `v*` のタグを push すると `.github/workflows/publish.yml` が動き、テスト → ビルド → TestPyPI → PyPI の順に公開する
+- 公開は Trusted Publishing（OIDC）で行い、attestation（provenance）が付く。PyPI と TestPyPI の両方に Trusted Publisher の登録が必要で、Workflow name は `publish.yml`、Environment は `pypi` / `testpypi`
+- 同じバージョンは再アップロードできない。公開前に `pyproject.toml` と `.claude-plugin/plugin.json` のバージョンを上げる
