@@ -5,10 +5,8 @@
             "command": "uv",
             "args": [
                 "run",
-                "--directory",
-                "${workspaceFolder}",
-                "-m",
-                "updsts",
+                "--script",
+                "${workspaceFolder}/src/updsts_main.py",
                 "mcp",
                 "--mcp-server"
             ],
