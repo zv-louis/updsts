@@ -60,16 +60,15 @@ async def updsts_get_credential_info_impl(profile_name: str,
         ValueError: If any validation fails or operation encounters an error.
     """
     logger = get_logger()
-    logger.info(f"DEBUG: awssts_get_credential_info_impl called with profile_name='{profile_name}', cred_file='{cred_file}'")
+    logger.debug(f"updsts_get_credential_info_impl called with profile_name='{profile_name}', cred_file='{cred_file}'")
     ret = None
     try:
-        logger.info(f"DEBUG: About to call get_profile_info")
         ret = get_profile_info(profile_name=profile_name,
                                credential_file=cred_file,
                                secret_mask=True)
         # Clean the return value for logging to avoid newline issues
         safe_ret = {k: v.strip() if isinstance(v, str) else v for k, v in ret.items()} if ret else ret
-        logger.info(f"DEBUG: get_profile_info returned: {safe_ret}")
+        logger.debug(f"get_profile_info returned: {safe_ret}")
     except Exception as e:
         logger.error(f"Error retrieving credentials for profile '{profile_name}': {str(e)}")
         logger.debug(f"Traceback: {traceback.format_exc()}")

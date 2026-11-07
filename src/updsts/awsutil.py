@@ -9,9 +9,10 @@ from botocore.exceptions import BotoCoreError, ClientError
 from configparser import ConfigParser, NoSectionError, NoOptionError
 from pathlib import Path
 from typing import Optional, Dict, Any, Callable
+from urllib.parse import urlsplit, urlunsplit
 
 from .logutil import get_logger
-from .upcred import CredentialUpdater
+from .upcred import CredentialUpdater, CREDENTIAL_FILE_ENCODING, credential_decode_error_message
 
 # ----------------------------------------------------------------------------
 def mask_string(s: str,
@@ -64,6 +65,23 @@ def mask_string(s: str,
     masked_part = '*' * middle_mask_len
     return s[:unmask_chars_head] + masked_part + tail_part
 
+# keys whose values must never be written to logs or MCP results as raw values
+SENSITIVE_KEYS = ('aws_access_key_id', 'aws_secret_access_key', 'aws_session_token')
+
+# ----------------------------------------------------------------------------
+def mask_url_credentials(url: str) -> str:
+    """
+    Mask the password in the userinfo part of a URL (e.g. a proxy URL) for logging.
+
+    Examples:
+        mask_url_credentials("http://user:pass@proxy:8080") -> "http://user:****@proxy:8080"
+        mask_url_credentials("http://proxy:8080") -> "http://proxy:8080"
+    """
+    parts = urlsplit(url)
+    if parts.password is None:
+        return url
+    host = parts.netloc.rpartition('@')[2]
+    return urlunsplit(parts._replace(netloc=f"{parts.username}:****@{host}"))
 
 # ----------------------------------------------------------------------------
 def get_credential_file_path(credential_file: str | None = None) -> Path:
@@ -84,6 +102,30 @@ def get_credential_file_path(credential_file: str | None = None) -> Path:
     logger = get_logger()
     logger.debug(f"Using credential file: {credential_file_path}")
     return credential_file_path
+
+# ----------------------------------------------------------------------------
+def load_credentials_config(credential_file: str | os.PathLike | None = None) -> ConfigParser:
+    """
+    Load the AWS credentials file.
+    Args:
+        credential_file (str | os.PathLike | None, optional): Path to the AWS credentials file.
+            If None, the default location (~/.aws/credentials) is used. Defaults to None.
+    Returns:
+        ConfigParser: The parsed credentials file.
+    Raises:
+        FileNotFoundError: If the credentials file does not exist.
+        ValueError: If the credentials file is not UTF-8 encoded.
+    """
+    credential_file = get_credential_file_path(None if credential_file is None else str(credential_file))
+    if not credential_file.exists():
+        raise FileNotFoundError(f"Credential file '{credential_file}' does not exist.")
+    # interpolation=None: treat '%' literally, as botocore (RawConfigParser) does
+    config = ConfigParser(interpolation=None)
+    try:
+        config.read(credential_file, encoding=CREDENTIAL_FILE_ENCODING)
+    except UnicodeDecodeError as e:
+        raise ValueError(credential_decode_error_message(credential_file, e)) from e
+    return config
 
 # ----------------------------------------------------------------------------
 def get_sts_token(profile_name: str,
@@ -108,11 +150,7 @@ def get_sts_token(profile_name: str,
     if totp_token is None or len(totp_token) == 0:
         raise ValueError("TOTP token is required to obtain STS token.")
 
-    credential_file = get_credential_file_path(credential_file)
-    if not credential_file.exists():
-        raise FileNotFoundError(f"Credential file '{credential_file}' does not exist.")
-    config = ConfigParser()
-    config.read(credential_file)
+    config = load_credentials_config(credential_file)
     try:
         access_key = config.get(profile_name, 'aws_access_key_id')
         secret_key = config.get(profile_name, 'aws_secret_access_key')
@@ -122,7 +160,7 @@ def get_sts_token(profile_name: str,
     except (NoSectionError) as e:
         raise Exception(f"Error reading profile '{profile_name}' from credentials file: {e}")
 
-    logger.debug(f"Using profile '{profile_name}' with access key '{access_key}' and MFA device ARN '{mfa_arn}'")
+    logger.debug(f"Using profile '{profile_name}' with access key '{mask_string(access_key)}' and MFA device ARN '{mfa_arn}'")
 
     try:
         # Read proxy settings from environment variables
@@ -131,10 +169,10 @@ def get_sts_token(profile_name: str,
         https_proxy = os.environ.get('https_proxy') or os.environ.get('HTTPS_PROXY')
         if http_proxy:
             proxies['http'] = http_proxy
-            logger.debug(f"Using HTTP proxy: {http_proxy}")
+            logger.debug(f"Using HTTP proxy: {mask_url_credentials(http_proxy)}")
         if https_proxy:
             proxies['https'] = https_proxy
-            logger.debug(f"Using HTTPS proxy: {https_proxy}")
+            logger.debug(f"Using HTTPS proxy: {mask_url_credentials(https_proxy)}")
 
         # Create a session with explicit credentials
         session = boto3.Session(
@@ -192,11 +230,7 @@ def get_profile_info(profile_name: str,
     logger = get_logger()
     config = ctx
     if config is None:
-        credential_file = get_credential_file_path(credential_file)
-        if not credential_file.exists():
-            raise FileNotFoundError(f"Credential file '{credential_file}' does not exist.")
-        config = ConfigParser()
-        config.read(credential_file)
+        config = load_credentials_config(credential_file)
     item_dic = None
     try:
         item_dic = {
@@ -210,7 +244,9 @@ def get_profile_info(profile_name: str,
         for key, value in config.items(profile_name):
             # Remove whitespace and newlines from log output
             raw_sensitive_value = value.strip() if value else value
-            logger.debug(f"Profile '{profile_name}': {key} = {raw_sensitive_value}")
+            # Always mask sensitive values in the log, regardless of secret_mask
+            log_value = mask_string(raw_sensitive_value) if key in SENSITIVE_KEYS else raw_sensitive_value
+            logger.debug(f"Profile '{profile_name}': {key} = {log_value}")
             # Mask secret key and session token if required
             if key == 'aws_access_key_id':
                 secret_key_id = mask_string(raw_sensitive_value) if (raw_sensitive_value and secret_mask) else raw_sensitive_value
@@ -227,9 +263,7 @@ def get_profile_info(profile_name: str,
         return item_dic
     except (NoSectionError) as e:
         logger.error(f"Error reading profile '{profile_name}' from credentials file: {e}")
-    except (NoOptionError) as e:
-        logger.error(f"Profile '{profile_name}' is missing required options: {e}")
-    return item_dic
+    return None
 
 # ----------------------------------------------------------------------------
 def get_profile_list(credential_file: str | None = None,
@@ -246,11 +280,7 @@ def get_profile_list(credential_file: str | None = None,
         Exception: If there is an error reading the profiles file.
     """
     logger = get_logger()
-    credential_file = get_credential_file_path(credential_file)
-    if not credential_file.exists():
-        raise FileNotFoundError(f"Credential file '{credential_file}' does not exist.")
-    config = ConfigParser()
-    config.read(credential_file)
+    config = load_credentials_config(credential_file)
     profiles = []
     for section in config.sections():
         item_dic = get_profile_info(profile_name=section,
