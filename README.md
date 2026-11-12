@@ -12,11 +12,9 @@ English | [日本語](README_ja.md)
   - [3. Runtime Environment](#3-runtime-environment)
   - [4. Installation/Usage](#4-installationusage)
     - [4-1. Install as a uv tool](#4-1-install-as-a-uv-tool)
-      - [4-1-1. Installation](#4-1-1-installation)
     - [4-2. Using uvx](#4-2-using-uvx)
-      - [4-2-1. Running with the uvx command](#4-2-1-running-with-the-uvx-command)
-      - [4-2-2. Registering as an MCP server](#4-2-2-registering-as-an-mcp-server)
-    - [4-3. Registering as an MCP server via the Claude plugin](#4-3-registering-as-an-mcp-server-via-the-claude-plugin)
+    - [4-3. Registering as an MCP server](#4-3-registering-as-an-mcp-server)
+    - [4-4. Installing the MCP server as a Claude plugin](#4-4-installing-the-mcp-server-as-a-claude-plugin)
   - [5. CUI Tool Command Options](#5-cui-tool-command-options)
     - [5-1. Common Options](#5-1-common-options)
     - [5-2. `get` Command](#5-2-get-command)
@@ -36,18 +34,19 @@ English | [日本語](README_ja.md)
 
 ## 1. Overview
 
-updsts is a command-line tool that retrieves AWS STS (Security Token Service) credentials using the credentials already registered in an existing credentials file (~/.aws/credentials). The retrieved credentials are automatically reflected in the same file.  
-It also works as a local MCP server that automatically updates the temporary credentials in the credentials file, so it can be operated from common Agent tools.
+updsts is a command-line tool that retrieves AWS STS (Security Token Service) credentials using the credentials already registered in an existing credentials file (~/.aws/credentials), and reflects them in the file as a separate profile.  
+It also works as a local MCP server, so common Agent tools can read and update the STS profile.  
+This makes it easier to automate AWS operations that use STS credentials.
 
 ## 2. Features
 
 - Obtain temporary AWS STS credentials using MFA authentication
-- Automatically update the STS profile in the credentials file with the new credentials
+- Update the STS profile in the credentials file
 - Support for TOTP-based MFA devices
-- List all AWS profiles in the credentials file
+- List all AWS profiles in the credentials file (confidential information is masked)
 - Leave profiles other than the one being updated untouched
 - Can be operated from common Agent tools when running as a local MCP server  
-  (Of course, care is taken to ensure that confidential information such as secret keys and session tokens is not sent to the LLM.)
+  (Confidential information such as secret keys and session tokens is returned masked and is never passed to the LLM.)
 - Support for proxy environments
 
 ## 3. Runtime Environment
@@ -61,12 +60,9 @@ For how to install uv, see:
 
 ## 4. Installation/Usage
 
+Use updsts with uv or uvx.  
+
 ### 4-1. Install as a uv tool
-
-Install updsts into a uv environment and use it.  
-Use this method when you use updsts as a CUI tool.  
-
-#### 4-1-1. Installation
 
 ```bash
 # Install from PyPI
@@ -81,11 +77,7 @@ updsts --help
 
 ### 4-2. Using uvx
 
-Run updsts directly from PyPI with uvx, without installing it.
-
-#### 4-2-1. Running with the uvx command
-
-Start updsts with the uvx command.
+Without installing it, start updsts directly from PyPI with the uvx command.
 
 ```bash
 uvx updsts --help
@@ -93,7 +85,7 @@ uvx updsts --help
 uvx updsts@latest --help
 ```
 
-#### 4-2-2. Registering as an MCP server
+### 4-3. Registering as an MCP server
 
 By registering updsts as an MCP server, you can operate it from common Agent tools.  
 For how to register an MCP server, refer to the manual of the Agent tool you use.
@@ -110,7 +102,7 @@ For how to register an MCP server, refer to the manual of the Agent tool you use
       "type": "stdio",
       "command": "uvx",
       "args": [
-        "updsts@latest",
+        "updsts@latest", // To pin the version, specify it like "updsts@0.9.2"
         "mcp",
         "--mcp-server"
       ],
@@ -120,7 +112,7 @@ For how to register an MCP server, refer to the manual of the Agent tool you use
 }
 ```
 
-### 4-3. Registering as an MCP server via the Claude plugin
+### 4-4. Installing the MCP server as a Claude plugin
 
 updsts can be installed as a Claude plugin.  
 
@@ -155,7 +147,7 @@ updsts get -n <profile_name> -t <totp_token>
 ### 5-3. `list` Command
 
 Display all AWS profiles in the credentials file.  
-Secrets (`aws_access_key_id`, `aws_secret_access_key`, `aws_session_token`) are displayed masked.
+Confidential information (`aws_access_key_id`, `aws_secret_access_key`, `aws_session_token`) are displayed masked.
 
 ```bash
 updsts list
@@ -230,18 +222,19 @@ When started as an MCP server, the following tools are available from Agent tool
 Get the STS credentials for the specified AWS profile and create/update the STS profile in the credentials file.
 
 - Parameters:
-  - `profile_name` (str): AWS profile name to update (required)
-  - `totp_token` (str): TOTP token from the MFA device (required)
-  - `sts_profile_name` (str | None): STS profile name to create in the credentials file (optional)
-    - If None or an empty string, `<profile_name>_sts` is used (default: None)
-  - `cred_file` (str | None): Path to the credentials file (optional)
-    - If None or an empty string, the default location (~/.aws/credentials) is used (default: None)
-  - `duration` (int): STS token duration in seconds (optional, default: 3600)
-- Returns (dict[str, str] | None): A dictionary containing the update result, or None on failure
+  - `profile_name` (`str`): AWS profile name to update (required)
+  - `totp_token` (`str`): TOTP token from the MFA device (required)
+  - `sts_profile_name` (`str`): STS profile name to create in the credentials file (optional)
+    - If an empty string, `<profile_name>_sts` is used (default: empty string)
+  - `cred_file` (`str`): Path to the credentials file (optional)
+    - If an empty string, the default location (~/.aws/credentials) is used (default: empty string)
+  - `duration` (`int`): STS token duration in seconds (optional, default: 3600)
+- Returns (`dict[str, str]`): A dictionary containing the update result
   - `updated_profile_name`: Name of the STS profile that was updated
   - `aws_access_key_id`: Access key ID of the retrieved STS credentials (masked)
   - `aws_token_expiration`: Expiration of the STS credentials (ISO 8601 format in the local time zone)
   - The secret access key and the session token are not returned
+  - On failure, an error (`ValueError`) is raised instead of a return value
 
 ### `updsts_get_credential_info`
 
@@ -249,10 +242,10 @@ Get the information of the specified AWS profile in the credentials file.
 For security reasons, `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` are returned masked.  
 
 - Parameters:
-  - `profile_name` (str): AWS profile name to retrieve (required)
-  - `cred_file` (str | None): Path to the credentials file (optional)
-    - If None or an empty string, the default location (~/.aws/credentials) is used (default: None)
-- Returns (dict[str, str] | None): A dictionary containing the credential details, or None if not found
+  - `profile_name` (`str`): AWS profile name to retrieve (required)
+  - `cred_file` (`str`): Path to the credentials file (optional)
+    - If an empty string, the default location (~/.aws/credentials) is used (default: empty string)
+- Returns (`dict[str, str] | None`): A dictionary containing the credential details, or `None` if not found
 
 ### `updsts_get_credential_info_list`
 
@@ -260,9 +253,9 @@ Get the information of all AWS profiles in the credentials file.
 For security reasons, `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` are returned masked.  
 
 - Parameters:
-  - `cred_file` (str | None): Path to the credentials file (optional)
-    - If None or an empty string, the default location (~/.aws/credentials) is used (default: None)
-- Returns (list[dict[str, str]]): A list of dictionaries containing the credential details, or an empty list if no profiles are found
+  - `cred_file` (`str`): Path to the credentials file (optional)
+    - If an empty string, the default location (~/.aws/credentials) is used (default: empty string)
+- Returns (`list[dict[str, str]]`): A list of dictionaries containing the credential details, or an empty list if no profiles are found
 
 ## 8. Security Notes
 
