@@ -25,7 +25,7 @@ src/updsts_main.py  ローカルのソースを MCP サーバーとして起動�
 test/             モジュールごとの pytest
 .claude-plugin/   Claude Code プラグインのマニフェスト
 .mcp.json         プラグイン用 MCP サーバー設定（uvx updsts@latest mcp --mcp-server。PyPI 公開版を起動する）
-.vscode/mcp.json  ワークスペース用 MCP サーバー設定（uv run -m updsts mcp --mcp-server。手元のソースを起動する）
+.vscode/mcp.json  ワークスペース用 MCP サーバー設定（uv run --script src/updsts_main.py mcp --mcp-server。手元のソースを起動する）
 .github/workflows/publish.yml  タグ push で TestPyPI → PyPI へ公開する（Trusted Publishing）
 ```
 
@@ -51,7 +51,7 @@ updsts mcp --mcp-server                              # MCP サーバーとして
 | `updsts_get_credential_info` | 指定プロファイルの情報（秘密情報はマスク済み） |
 | `updsts_get_credential_info_list` | 全プロファイルの情報（秘密情報はマスク済み） |
 
-各ツールの `cred_file` と `sts_profile_name` は、空文字列なら既定値を使う。
+各ツールの `cred_file` は、空文字列なら既定値を使う。`updsts_update_sts_credential` の `sts_profile_name` も、空文字列なら `<profile>_sts` を使う。
 TOTP トークンは mktotp などで生成する前提で、プロファイルの `totp_secret_name` がその対応付けに使われる。
 
 ## credentials ファイル
@@ -70,7 +70,8 @@ TOTP トークンは mktotp などで生成する前提で、プロファイル�
   # $}}} [auto update by updsts]
   ```
 
-- 書き換えは `.tmp` に書いてから置き換える。元ファイルの権限を引き継ぐ
+- 書き換えは `.tmp` に書いてから置き換える。`.tmp` は所有者のみ読み書き可（0600）で作り、置き換え前に元ファイルの権限を引き継ぐ。失敗時は `.tmp` を削除し、元ファイルには触れない
+- 読み込みは BOM 付き UTF-8 を受け付け、書き戻しは BOM なしの UTF-8 にする。UTF-8 でないファイルはエラーにする
 - `expiration_datetime` はローカルタイムゾーンの ISO 8601 形式
 - プロキシは環境変数 `http_proxy` / `https_proxy` から読む
 - ログファイルは `~/.awscm/log/awscm.log`
@@ -87,7 +88,7 @@ uv run updsts --help    # ローカル実行
 
 - MCP ツールの戻り値やログに秘密情報を生の値で含めない。`get_profile_info` / `get_profile_list` を MCP から呼ぶときは `secret_mask=True` を渡す
 - ログは stderr に出す。stdout は MCP の stdio 通信に使われる
-- 依存を変えるときは `pyproject.toml` と `src/updsts_main.py` のインライン依存の両方を更新する
+- 依存を変えるときは `pyproject.toml` と `src/updsts_main.py` のインライン依存の両方を更新し、`uv.lock` も更新する（`uv lock`、間接依存だけなら `uv lock --upgrade-package <name>`）
 - バージョンは `pyproject.toml` と `.claude-plugin/plugin.json` の両方にある
 - `.mcp.json` は PyPI の公開版を起動する。ソースの変更を MCP 経由で試すときは `.vscode/mcp.json`（手元のソースを起動）を使う
 
@@ -96,3 +97,4 @@ uv run updsts --help    # ローカル実行
 - `v*` のタグを push すると `.github/workflows/publish.yml` が動き、テスト → ビルド → TestPyPI → PyPI の順に公開する
 - 公開は Trusted Publishing（OIDC）で行い、attestation（provenance）が付く。PyPI と TestPyPI の両方に Trusted Publisher の登録が必要で、Workflow name は `publish.yml`、Environment は `pypi` / `testpypi`
 - 同じバージョンは再アップロードできない。公開前に `pyproject.toml` と `.claude-plugin/plugin.json` のバージョンを上げる
+- タグ push のときは、タグ（`v` を除く）と `pyproject.toml` のバージョンが違う場合、または `plugin.json` と `pyproject.toml` のバージョンが違う場合に、ワークフローは最初のジョブで失敗する

@@ -47,12 +47,13 @@ This makes it easier to automate AWS operations that use STS credentials.
 - Leave profiles other than the one being updated untouched
 - Can be operated from common Agent tools when running as a local MCP server  
   (Confidential information such as secret keys and session tokens is returned masked and is never passed to the LLM.)
-- Support for proxy environments
+- Support for proxy environments (reads the `http_proxy` / `https_proxy` environment variables)
 
 ## 3. Runtime Environment
 
 This project uses uv as the package manager.  
 Using uv allows you to reproduce the runtime environment automatically.  
+Python 3.12 or later is required (uv installs a suitable Python automatically if needed).  
 
 For how to install uv, see:
 
@@ -192,10 +193,10 @@ totp_secret_name = my_totp_secret
 # The section enclosed by the following tags is automatically created/updated by updsts.
 # ${{{ key=<name of the profile that requested STS> [auto update by updsts]
 [default_sts]
-aws_access_key_id = ASIAIOSFODNN7EXAMPLE
-aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYtempKEY
-aws_session_token = IQoJb3JpZ2luX2VjE...
-expiration_datetime = 2025-10-05T15:30:00+09:00
+aws_access_key_id=ASIAIOSFODNN7EXAMPLE
+aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYtempKEY
+aws_session_token=IQoJb3JpZ2luX2VjE...
+expiration_datetime=2025-10-05T15:30:00+09:00
 # $}}} [auto update by updsts]
 ```
 
@@ -260,6 +261,8 @@ For security reasons, `aws_access_key_id`, `aws_secret_access_key` and `aws_sess
 ## 8. Security Notes
 
 - The credentials file contains sensitive information, so protect it with appropriate permissions (recommended: 600)
+- When updating, updsts writes a temporary file readable only by the owner, then replaces the credentials file with it and keeps the original file's permissions
+- Secret keys and session tokens are never written to the log or returned to the Agent in raw form
 
 ## 9. License
 

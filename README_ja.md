@@ -48,12 +48,13 @@ updsts は、既存の認証情報ファイル（~/.aws/credentials）に登録�
 - 更新対象以外のプロファイルをそのまま保持
 - ローカルMCPサーバーとして機能し、一般的なエージェントツールからの操作が可能  
   （secret key や session token などの機密情報はマスクして返し、LLMには渡しません）
-- プロキシ環境のサポート
+- プロキシ環境のサポート（環境変数 `http_proxy` / `https_proxy` を参照）
 
 ## 3. 実行環境
 
 このプロジェクトではパッケージマネージャーとしてuvを使用しています。  
 uvを使用することで実行環境を自動的に再現できます。  
+Python 3.12 以上が必要です（必要に応じて uv が適切な Python を自動で用意します）。  
 
 uvのインストールについてはこちらを参照してください:
 
@@ -193,10 +194,10 @@ totp_secret_name = my_totp_secret
 # 以下のタグに囲まれた部分が updsts によって自動的に作成/更新されます。
 # ${{{ key=<STSをリクエストしたプロファイル名> [auto update by updsts]
 [default_sts]
-aws_access_key_id = ASIAIOSFODNN7EXAMPLE
-aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYtempKEY
-aws_session_token = IQoJb3JpZ2luX2VjE...
-expiration_datetime = 2025-10-05T15:30:00+09:00
+aws_access_key_id=ASIAIOSFODNN7EXAMPLE
+aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYtempKEY
+aws_session_token=IQoJb3JpZ2luX2VjE...
+expiration_datetime=2025-10-05T15:30:00+09:00
 # $}}} [auto update by updsts]
 ```
 
@@ -261,6 +262,8 @@ MCPサーバーとして起動した場合、以下のツールがエージェ�
 ## 8. セキュリティに関する注意事項
 
 - 認証情報ファイルには機密情報が含まれているため、適切な権限設定で保護してください（推奨: 600）
+- 更新時は、所有者のみ読み書きできる一時ファイルに書き出してから認証情報ファイルを置き換え、元のファイルの権限を引き継ぎます
+- シークレットキーやセッショントークンは、ログに出力せず、エージェントにも生の値では返しません
 
 ## 9. ライセンス
 
