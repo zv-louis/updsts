@@ -1,4 +1,4 @@
-# encoding: utf-8-sig
+# encoding: utf-8
 
 """
 Test package for updsts.

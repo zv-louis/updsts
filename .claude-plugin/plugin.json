@@ -1,7 +1,7 @@
 {
   "name": "updsts-mcp",
   "description": "MCP server that gets AWS STS credentials using an existing AWS profile and a TOTP token, and updates the credentials file. Secrets are masked in responses.",
-  "version": "0.9.2",
+  "version": "0.10.1",
   "author": {
     "name": "kanok-one",
     "email": "zervoid77@gmail.com"

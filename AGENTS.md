@@ -48,8 +48,8 @@ updsts mcp --mcp-server                              # MCP サーバーとして
 | ツール | 内容 |
 | --- | --- |
 | `updsts_update_sts_credential` | TOTP トークンで STS 認証情報を取得し、credentials ファイルを更新 |
-| `updsts_get_credential_info` | 指定プロファイルの情報（秘密情報はマスク済み） |
-| `updsts_get_credential_info_list` | 全プロファイルの情報（秘密情報はマスク済み） |
+| `updsts_get_credential_status` | 指定プロファイルの情報（秘密情報はマスク済み） |
+| `updsts_get_credential_status_list` | 全プロファイルの情報（秘密情報はマスク済み） |
 
 各ツールの `cred_file` は、空文字列なら既定値を使う。`updsts_update_sts_credential` の `sts_profile_name` も、空文字列なら `<profile>_sts` を使う。
 TOTP トークンは mktotp などで生成する前提で、プロファイルの `totp_secret_name` がその対応付けに使われる。

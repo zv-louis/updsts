@@ -25,8 +25,8 @@ English | [日本語](README_ja.md)
     - [6-2. Credentials File Location](#6-2-credentials-file-location)
   - [7. Available MCP Tools](#7-available-mcp-tools)
     - [`updsts_update_sts_credential`](#updsts_update_sts_credential)
-    - [`updsts_get_credential_info`](#updsts_get_credential_info)
-    - [`updsts_get_credential_info_list`](#updsts_get_credential_info_list)
+    - [`updsts_get_credential_status`](#updsts_get_credential_status)
+    - [`updsts_get_credential_status_list`](#updsts_get_credential_status_list)
   - [8. Security Notes](#8-security-notes)
   - [9. License](#9-license)
 
@@ -103,7 +103,7 @@ For how to register an MCP server, refer to the manual of the Agent tool you use
       "type": "stdio",
       "command": "uvx",
       "args": [
-        "updsts@latest", // To pin the version, specify it like "updsts@0.9.2"
+        "updsts@latest", // To pin the version, specify it like "updsts@0.10.1"
         "mcp",
         "--mcp-server"
       ],
@@ -237,7 +237,7 @@ Get the STS credentials for the specified AWS profile and create/update the STS 
   - The secret access key and the session token are not returned
   - On failure, an error (`ValueError`) is raised instead of a return value
 
-### `updsts_get_credential_info`
+### `updsts_get_credential_status`
 
 Get the information of the specified AWS profile in the credentials file.  
 For security reasons, `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` are returned masked.  
@@ -248,7 +248,7 @@ For security reasons, `aws_access_key_id`, `aws_secret_access_key` and `aws_sess
     - If an empty string, the default location (~/.aws/credentials) is used (default: empty string)
 - Returns (`dict[str, str] | None`): A dictionary containing the credential details, or `None` if not found
 
-### `updsts_get_credential_info_list`
+### `updsts_get_credential_status_list`
 
 Get the information of all AWS profiles in the credentials file.  
 For security reasons, `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` are returned masked.  

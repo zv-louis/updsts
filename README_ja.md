@@ -25,8 +25,8 @@ AWSのSTS認証情報を認証情報ファイルへ反映させるシンプル�
     - [6-2. 認証情報ファイルの場所](#6-2-認証情報ファイルの場所)
   - [7. 提供される MCPツール一覧](#7-提供される-mcpツール一覧)
     - [`updsts_update_sts_credential`](#updsts_update_sts_credential)
-    - [`updsts_get_credential_info`](#updsts_get_credential_info)
-    - [`updsts_get_credential_info_list`](#updsts_get_credential_info_list)
+    - [`updsts_get_credential_status`](#updsts_get_credential_status)
+    - [`updsts_get_credential_status_list`](#updsts_get_credential_status_list)
   - [8. セキュリティに関する注意事項](#8-セキュリティに関する注意事項)
   - [9. ライセンス](#9-ライセンス)
 
@@ -104,7 +104,7 @@ MCPサーバーの登録手順は、使っているエージェントツール�
       "type": "stdio",
       "command": "uvx",
       "args": [
-        "updsts@latest", // バージョンを固定する場合は、"updsts@0.9.2" のように指定する
+        "updsts@latest", // バージョンを固定する場合は、"updsts@0.10.1" のように指定する
         "mcp",
         "--mcp-server"
       ],
@@ -238,7 +238,7 @@ MCPサーバーとして起動した場合、以下のツールがエージェ�
   - シークレットアクセスキーとセッショントークンは返却されません
   - 失敗時は戻り値ではなく、エラー（`ValueError`）として通知されます
 
-### `updsts_get_credential_info`
+### `updsts_get_credential_status`
 
 プロファイル名を指定して、認証情報ファイル内に存在するAWSプロファイルの情報を取得します。  
 ただし、セキュリティ上の理由から、`aws_access_key_id`, `aws_secret_access_key`, `aws_session_token` はマスクした情報が返却されます。  
@@ -249,7 +249,7 @@ MCPサーバーとして起動した場合、以下のツールがエージェ�
     - 空文字列の場合、デフォルトの場所（~/.aws/credentials）が使用されます（デフォルト: 空文字列）
 - 戻り値（`dict[str, str] | None`）: 認証情報の詳細を含む辞書、または見つからない場合は `None`
 
-### `updsts_get_credential_info_list`
+### `updsts_get_credential_status_list`
 
 認証情報ファイル内のすべてのAWSプロファイルについて、情報を取得します。  
 ただし、セキュリティ上の理由から、`aws_access_key_id`, `aws_secret_access_key`, `aws_session_token` はマスクした情報が返却されます。  

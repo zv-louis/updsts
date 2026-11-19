@@ -1,4 +1,4 @@
-﻿# encoding : utf-8-sig
+# encoding: utf-8
 
 import asyncio
 import traceback
@@ -81,7 +81,7 @@ async def updsts_update_sts_credential(
         profile_name: AWS profile name to update
         totp_token: TOTP token from the registered MFA device.
                     <note>: The registerd totp secret name may be not match with the profile_name.
-                            so, check it by using 'updsts_get_credential_info' first to get totp secret name.
+                            so, check it by using 'updsts_get_credential_status' first to get totp secret name.
                             or prompt user to input the correct TOTP token if there is no totp secret registered.
         sts_profile_name: Specify STS Profile name in the updated AWS credentials file.
                           If empty string, '<profile_name>_sts' will be used as the default sts profile name. Defaults to "".
@@ -103,12 +103,12 @@ async def updsts_update_sts_credential(
 # -------------------------------------------------------------------------------------------
 # mcp tool for registering a secret from QR code
 @mcp.tool()
-async def updsts_get_credential_info(
+async def updsts_get_credential_status(
         profile_name:  Annotated[str, Field(description="Profile name to get sts secret key.")],
         cred_file: Annotated[str, Field(description="Credential file path. If empty string, the default credential file will be used.")] = ""
 ) -> dict[str, str] | None:
     """
-    Get registerd AWS credential information for the specified profile.
+    Get registerd AWS credential status for the specified profile.
 
     This tool retrieves the registerd AWS credentials for the specified profile name
     from the AWS credentials file.
@@ -118,30 +118,30 @@ async def updsts_get_credential_info(
         cred_file: Path to AWS credentials file (optional)
                    If empty string, the default location (~/.aws/credentials) is used. Defaults to "".
     Returns:
-        dict[str, str] | None: Dictionary containing the credential details or None if not found
+        dict[str, str] | None: Dictionary containing the credential status or None if not found
     """
     ret = None
-    ret = await updsts_get_credential_info_impl(profile_name=profile_name,
-                                                cred_file=cred_file if cred_file else None)
+    ret = await updsts_get_credential_status_impl(profile_name=profile_name,
+                                                  cred_file=cred_file if cred_file else None)
     return ret
 
 # -------------------------------------------------------------------------------------------
 # mcp tool for registering a secret from QR code
 @mcp.tool()
-async def updsts_get_credential_info_list(
+async def updsts_get_credential_status_list(
         cred_file: Annotated[str, Field(description="Credential file path. If empty string, the default credential file will be used.")] = ""
 ) -> list[dict[str, str]]:
     """
-    Get registerd AWS credential information list for all profiles.
+    Get registerd AWS credential status list for all profiles.
 
-    This tool retrieves the all AWS credentials in the cred_file.
+    This tool retrieves status list of the all AWS credentials in the cred_file.
 
     Args:
         cred_file: Path to AWS credentials file (optional)
                    If empty string, the default location (~/.aws/credentials) is used. Defaults to "".
     Returns:
-        list[dict[str, str]]: The list of the dictionary containing the credential details or empty list if not found.
+        list[dict[str, str]]: The list of the dictionary containing the credential status or empty list if not found.
     """
     ret = []
-    ret = await updsts_get_credential_info_list_impl(cred_file=cred_file if cred_file else None)
+    ret = await updsts_get_credential_status_list_impl(cred_file=cred_file if cred_file else None)
     return ret

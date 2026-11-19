@@ -1,4 +1,4 @@
-﻿# encoding : utf-8-sig
+# encoding: utf-8
 
 import asyncio
 import traceback
@@ -44,8 +44,8 @@ async def updsts_update_sts_credential_impl(profile_name: str,
 
 
 #-------------------------------------------------------------------------------------------
-async def updsts_get_credential_info_impl(profile_name: str,
-                                    cred_file: str | None = None) -> dict[str, str] | None:
+async def updsts_get_credential_status_impl(profile_name: str,
+                                            cred_file: str | None = None) -> dict[str, str] | None:
     """
     Implementation for getting AWS STS credential info.
 
@@ -60,7 +60,7 @@ async def updsts_get_credential_info_impl(profile_name: str,
         ValueError: If any validation fails or operation encounters an error.
     """
     logger = get_logger()
-    logger.debug(f"updsts_get_credential_info_impl called with profile_name='{profile_name}', cred_file='{cred_file}'")
+    logger.debug(f"updsts_get_credential_status_impl called with profile_name='{profile_name}', cred_file='{cred_file}'")
     ret = None
     try:
         ret = get_profile_info(profile_name=profile_name,
@@ -76,7 +76,7 @@ async def updsts_get_credential_info_impl(profile_name: str,
     return ret
 
 #-------------------------------------------------------------------------------------------
-async def updsts_get_credential_info_list_impl(cred_file: str | None = None) -> list[dict[str, str]]:
+async def updsts_get_credential_status_list_impl(cred_file: str | None = None) -> list[dict[str, str]]:
     """
     Implementation for getting list of AWS STS credential info.
 

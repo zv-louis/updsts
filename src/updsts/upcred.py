@@ -1,4 +1,4 @@
-﻿# encoding : utf_8_sig
+# encoding: utf-8
 
 import os
 import re
